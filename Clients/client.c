@@ -1,6 +1,5 @@
 #include "../utils/headers.h"
-
 int main() {
-    printf("ns heyar\n");
+    printf("client heyar");
     return 0;
 }

@@ -1,6 +1,6 @@
 #include "../utils/headers.h"
 
 int main() {
-    printf("ns heyar\n");
+    printf("server heyar\n");
     return 0;
 }
