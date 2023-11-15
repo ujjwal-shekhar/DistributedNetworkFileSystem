@@ -32,6 +32,7 @@ typedef struct ClientDetails {
 typedef struct ClientRequest {
     ClientDetails clientDetails;
     RequestType requestType;
+    int num_args;
     char arg1[MAX_ARG_LEN];
     char arg2[MAX_ARG_LEN];
 } ClientRequest;
