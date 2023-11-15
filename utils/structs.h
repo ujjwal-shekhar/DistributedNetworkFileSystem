@@ -6,17 +6,55 @@
 // Include necessary headers
 #include "constants.h"
 
-// Define your structures here
-struct Client {
+/**
+ * @brief ClientDetails struct to store client details
+ * 
+ * @param clientID : client ID (unique)
+ * @param clientSocket : client socket
+ * @param clientPort : client port
+ * @param clientIP : client IP address
+ * 
+ */
+typedef struct ClientDetails {
     int clientID;
-    char name[50];
-    // Add more fields as needed
-};
+    int clientSocket;
+    int clientPort;
+    char clientIP[IP_LEN];
+} ClientDetails;
 
-struct Server {
+/**
+ * @brief ClientRequest struct to store client request
+ * 
+ * @param clientDetails : client details
+ * @param requestType : request type
+ * 
+ */
+typedef struct ClientRequest {
+    ClientDetails clientDetails;
+    RequestType requestType;
+    char arg1[MAX_ARG_LEN];
+    char arg2[MAX_ARG_LEN];
+} ClientRequest;
+
+/**
+ * @brief ServerDetails struct to store server details
+ * 
+ * @param serverID : server ID (unique)
+ */
+typedef struct ServerDetails {
     int serverID;
-    char name[50];
-    // Add more fields as needed
-};
+} ServerDetails;
+
+/**
+ * @brief ackPacket struct to send details
+ * 
+ * @param errorCode : error code
+ * @param ack : ack bit
+ *
+ */
+typedef struct ackPacket {
+    ErrorCode errorCode;
+    AckBit ack;
+} ackPacket;
 
 #endif // STRUCTS_H

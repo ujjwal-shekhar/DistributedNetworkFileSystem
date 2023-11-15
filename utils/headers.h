@@ -5,6 +5,7 @@
 // Include other globally available headers
 #include "constants.h"
 #include "structs.h"
+#include "logging.h"
 
 // Include standard libraries
 #include <stdio.h>
@@ -20,5 +21,6 @@
 #include <sys/time.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <stdbool.h>
 
 #endif // HEADERS_H
