@@ -16,6 +16,7 @@
 #define MAX_PATH_LEN 256 
 #define MAX_PATHS 1000
 #define MAX_ACK_EXTRA_INFO 100
+#define NUM_INIT_SERVERS 4
 
 // Timeout intervals
 #define MAX_NM_TO_CLT_TIMEOUT 30

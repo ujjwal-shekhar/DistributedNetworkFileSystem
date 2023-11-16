@@ -1,14 +1,10 @@
 // nm.c
 #include "../utils/headers.h"
 
-// Make a list of client fds
-int client_fds[MAX_CLIENTS];
-
-// List of client threads
-pthread_t clientThreads[MAX_CLIENTS];
-
-// List of servers
-ServerDetails servers[MAX_SERVERS];
+int client_fds[MAX_CLIENTS];                    // Make a list of client fds
+pthread_t clientThreads[MAX_CLIENTS];           // List of client threads
+ServerDetails servers[MAX_SERVERS];             // List of servers
+sem_t servers_initialized;                      // Semaphore to wait for MIN_SERVERS to come alive before client requests begin
 
 // Function to handle client communication in a separate thread
 void* handleClientCommunication(void* arg) {
@@ -37,18 +33,33 @@ void* handleClientCommunication(void* arg) {
             break;  // Exit the loop if there is an error
         }
     }
-    printf("Exiting thread...\n"); 
+    printf("Exiting thread...\n");
 
     // Close the client socket when communication is done
     close(clientSocket);
 
-    // Mark the slot as available
+    // Mark the slot as availablez
     *((int*)arg) = -1;
 
     pthread_exit(NULL);
 }
 
-int main() {
+void* listenServerRequests(void* arg) {
+    // Placeholder implementation for listening to storage server requests
+    // This thread will initialize servers and post to servers_initialized semaphore
+    // whenever a new server is initialized
+
+    // For now send sem_posts for NUM_INIT_SERVERS times
+    for (int i = 0; i < NUM_INIT_SERVERS; i++) {
+        sem_post(&servers_initialized);
+    }
+
+    /* TBD */
+    return NULL;
+}
+
+void* listenClientRequests(void* arg) {
+    // Placeholder implementation for listening to client requests
     // Initialize the client fds to -1
     for (int i = 0; i < MAX_CLIENTS; i++) {
         client_fds[i] = -1;
@@ -126,6 +137,45 @@ int main() {
 
     // Close the server socket (this won't be reached in this simple example)
     close(serverSocket);
+
+    return NULL;
+}
+
+int main() {
+    // I will first spawn a thread to listen 
+    // for incoming storage server requests
+    pthread_t listenServerThreadId;
+    if (pthread_create(&listenServerThreadId, NULL, listenServerRequests, NULL) != 0) {
+        perror("Error creating listenServerRequests thread");
+        exit(EXIT_FAILURE);
+    }
+
+    // Now, a semaphore will be initialized to 
+    // minus(NUM_INIT_SERVERS). Every time 
+    // a server is initialized in the listen server
+    // connection requests, we will post here
+    // When it is finally zero, the program will 
+    // continue
+    sem_init(&servers_initialized, 0, 1 - NUM_INIT_SERVERS);
+
+    // Wait for the servers to be initialized
+    sem_wait(&servers_initialized);
+
+    // Spawn a thread to forever listen for new
+    // client requests.
+    pthread_t listenClientThreadId;
+    if (pthread_create(&listenClientThreadId, NULL, listenClientRequests, NULL) != 0) {
+        perror("Error creating listenClientRequests thread");
+        exit(EXIT_FAILURE);
+    }
+
+    // Wait for user input to exit
+    getchar();
+
+    // Close threads and perform cleanup
+    pthread_cancel(listenServerThreadId);
+    pthread_cancel(listenClientThreadId);
+    sem_destroy(&servers_initialized);
 
     return 0;
 }

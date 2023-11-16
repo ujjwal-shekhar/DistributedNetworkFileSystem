@@ -62,45 +62,45 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    // Get the 0th entry of the extraInfo
-    // Now, set the serverID to this 
-    // value
-    serverDetails.serverID = nmAck.extraInfo[0];
+    // // Get the 0th entry of the extraInfo
+    // // Now, set the serverID to this 
+    // // value
+    // serverDetails.serverID = nmAck.extraInfo[0];
 
-    // Now, spawn an aliveThread. This thread 
-    // receives a "CHECK" packet from
-    // the server, and replies with a "CHECK"
-    // packet + serverID. Sleep for 10 seconds.
-    // Don't wait for this thread to join
-    pthread_t aliveThreadId;
-    if (pthread_create(&aliveThreadId, NULL, aliveThread, NULL) != 0) {
-        perror("Error creating aliveThread");
-        exit(EXIT_FAILURE);
-    }
+    // // Now, spawn an aliveThread. This thread 
+    // // receives a "CHECK" packet from
+    // // the server, and replies with a "CHECK"
+    // // packet + serverID. Sleep for 10 seconds.
+    // // Don't wait for this thread to join
+    // pthread_t aliveThreadId;
+    // if (pthread_create(&aliveThreadId, NULL, aliveThread, NULL) != 0) {
+    //     perror("Error creating aliveThread");
+    //     exit(EXIT_FAILURE);
+    // }
 
-    // Now, spawn an NM thread, recv NM requests
-    // here. Don't wait for it to join. Process 
-    // the queries here.
-    pthread_t nmThreadId;
-    if (pthread_create(&nmThreadId, NULL, nmThread, NULL) != 0) {
-        perror("Error creating NM thread");
-        exit(EXIT_FAILURE);
-    }
+    // // Now, spawn an NM thread, recv NM requests
+    // // here. Don't wait for it to join. Process 
+    // // the queries here.
+    // pthread_t nmThreadId;
+    // if (pthread_create(&nmThreadId, NULL, nmThread, NULL) != 0) {
+    //     perror("Error creating NM thread");
+    //     exit(EXIT_FAILURE);
+    // }
 
-    // Now, spawn a client thread, recv client 
-    // requests here. Don't wait for it to join. 
-    // Wait for a connection request, and process 
-    // client request
-    pthread_t clientThreadId;
-    if (pthread_create(&clientThreadId, NULL, clientThread, NULL) != 0) {
-        perror("Error creating client thread");
-        exit(EXIT_FAILURE);
-    }
+    // // Now, spawn a client thread, recv client 
+    // // requests here. Don't wait for it to join. 
+    // // Wait for a connection request, and process 
+    // // client request
+    // pthread_t clientThreadId;
+    // if (pthread_create(&clientThreadId, NULL, clientThread, NULL) != 0) {
+    //     perror("Error creating client thread");
+    //     exit(EXIT_FAILURE);
+    // }
 
-    // Wait for user input to exit
-    getchar();
+    // // Wait for user input to exit
+    // getchar();
 
-    // Close threads and perform cleanup (not shown in the placeholder)
+    // // Close threads and perform cleanup (not shown in the placeholder)
 
     return 0;
 }
