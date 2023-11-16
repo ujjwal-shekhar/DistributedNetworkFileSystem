@@ -50,6 +50,7 @@ typedef enum {
     NETWORK_ERROR,
     RUNTIME_ERROR,
     INVALID_INPUT_ERROR,
+    SERVER_ALREADY_REGISTERED,
     OTHER = 69
 } ErrorCode;
 
@@ -71,5 +72,6 @@ typedef enum {
 // Standard Ports for NM
 #define NM_CLT_PORT 8080 // NM listens for clients
 #define NM_NEW_SRV_PORT 5049 // NM listens for new servers
+#define NM_COMM_SRV_PORT 5050 // NM communicates for servers
 
 #endif // CONSTANTS_H
