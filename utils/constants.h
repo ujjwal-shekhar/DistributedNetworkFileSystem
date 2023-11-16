@@ -15,6 +15,7 @@
 #define MAX_LISTEN_BACKLOG 20
 #define MAX_PATH_LEN 256 
 #define MAX_PATHS 1000
+#define MAX_ACK_EXTRA_INFO 100
 
 // Timeout intervals
 #define MAX_NM_TO_CLT_TIMEOUT 30
@@ -55,6 +56,7 @@ typedef enum {
 typedef enum {
     SUCCESS_ACK = 0,
     FAILURE_ACK,
+    CHECK_ACK,
     STOP_ACK
 } AckBit;
 
@@ -65,9 +67,8 @@ typedef enum {
 // NM IP address
 #define NM_IP "127.0.0.1"
 
-// Standard Ports
+// Standard Ports for NM
 #define NM_CLT_PORT 8080 // NM listens for clients
 #define NM_NEW_SRV_PORT 5049 // NM listens for new servers
-
 
 #endif // CONSTANTS_H

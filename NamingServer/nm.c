@@ -7,6 +7,9 @@ int client_fds[MAX_CLIENTS];
 // List of client threads
 pthread_t clientThreads[MAX_CLIENTS];
 
+// List of servers
+ServerDetails servers[MAX_SERVERS];
+
 // Function to handle client communication in a separate thread
 void* handleClientCommunication(void* arg) {
     int clientSocket = *((int*)arg);

@@ -35,7 +35,8 @@ CFLAGS := -g -Wall $(CFLAGS_INC)
 #
 ## ==================- NOTHING TO CHANGE BELOW THIS LINE ===================
 ##
-SRCS := $(wildcard Clients/*.c NamingServer/*.c StorageServers/*.c utils/*.c)
+# Update source file locations
+SRCS := $(wildcard *.c Clients/*.c NamingServer/*.c StorageServers/*.c utils/*.c)
 PRGS := $(patsubst %.c,%,$(SRCS))
 PRG_SUFFIX=.exe
 BINS := $(patsubst %,%$(PRG_SUFFIX),$(PRGS))

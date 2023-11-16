@@ -4,6 +4,7 @@
 #define STRUCTS_H
 
 // Include necessary headers
+#include <stdbool.h>
 #include "constants.h"
 
 /**
@@ -45,6 +46,7 @@ typedef struct ClientRequest {
  * @param port_nm : port for communication with Naming Server
  * @param port_client : port for communication with client
  * @param accessible_paths : list of accessible paths for this storage server
+ * @param online : whether the server is online or not
  * 
  */
 typedef struct ServerDetails {
@@ -53,6 +55,7 @@ typedef struct ServerDetails {
     int port_nm;
     int port_client;
     char accessible_paths[MAX_PATHS][MAX_PATH_LEN];
+    bool online;
 } ServerDetails;
 
 /**
@@ -65,6 +68,7 @@ typedef struct ServerDetails {
 typedef struct ackPacket {
     ErrorCode errorCode;
     AckBit ack;
+    int extraInfo[MAX_ACK_EXTRA_INFO];
 } ackPacket;
 
 #endif // STRUCTS_H
