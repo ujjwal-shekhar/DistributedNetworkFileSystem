@@ -25,8 +25,33 @@ void* handleClientCommunication(void* arg) {
             break;  // Exit the loop if there is an error
         }
 
-        // Print the Request details
-        printf("Argument 1: %s\n", clientRequest.arg1);
+        // Search in the serverDetails to find
+        // which storage server has the requested
+        // path inside it. Do this for all num_args
+        // number of arguments.
+        int ss_num = 0; /* Hardcoded for now */
+
+        // Check if the Request_type is one in which 
+        // we need to send the client details of the SS
+        if (
+            clientRequest.requestType == READ_FILE ||
+            clientRequest.requestType == WRITE_FILE ||
+            clientRequest.requestType == DELETE_FILE ||
+            clientRequest.requestType == GET_FILE_INFO
+        ) {
+            // Once you get the storage server details
+            // send ACK bit with ACK_TYPE = CNNCT_TO_SRV_ACK
+            // Handle this interaction in Client <-> Server
+        } else {
+            // This will be different now, We will send 
+            // the clientRequest ourselves instead of 
+            // sending the client details to the storage
+            // server. The storage server will then
+            // send the ACK bit back to us. We will
+            // then send the ACK bit back to the client.
+
+
+        }
 
         // Send a success acknowledgment to the client
         ackPacket successAck;
@@ -38,7 +63,6 @@ void* handleClientCommunication(void* arg) {
             break;  // Exit the loop if there is an error
         }
     }
-    printf("Exiting thread...\n");
 
     // Close the client socket when communication is done
     close(clientSocket);
@@ -103,7 +127,6 @@ void* listenServerRequests(void* arg) {
     printf("\x1b[32mNaming Server is listening for SERVER connections...\x1b[0m\n");
 
     while (1) {
-    printf("Servers listener is woken up\n");
         struct sockaddr_in clientAddr;
         socklen_t clientLen = sizeof(clientAddr);
 

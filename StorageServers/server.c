@@ -2,8 +2,9 @@
 #include "../utils/headers.h"
 
 #define MY_SRV_IP "127.0.0.1"
-#define MY_SRV_NM_PORT 6060
-#define MY_SRV_CLT_PORT 7070
+ServerDetails serverDetails;
+// #define MY_SRV_NM_PORT 6060
+// #define MY_SRV_CLT_PORT 7070
 
 void* aliveThreadReply(void* arg) {
     // Placeholder implementation for aliveThread
@@ -18,10 +19,60 @@ void* aliveThreadReply(void* arg) {
 }
 
 void* nmThread(void* arg) {
-    // Placeholder implementation for NM thread
+    // Create a socket
+    int sock_fd = socket(SOCKET_FAMILY, SOCKET_TYPE, SOCKET_PROTOCOL);
+
+    // Create a sockaddr_in struct for the server
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = SOCKET_FAMILY;
+    server_addr.sin_port = htons(serverDetails.port_nm);
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+
+    // Bind the socket to the port
+    if (bind(sock_fd, (struct sockaddr*) &server_addr, sizeof(server_addr)) < 0) {
+        perror("Error binding socket");
+        exit(EXIT_FAILURE);
+    }
+
+    // Listen for incoming connections
+    if (listen(sock_fd, MAX_LISTEN_BACKLOG) < 0) {
+        perror("Error listening for connections");
+        exit(EXIT_FAILURE);
+    }
+
     while (1) {
-        // Receive NM requests here
-        // Process the queries
+        struct sockaddr_in nm_addr;
+        int nm_addr_len = sizeof(nm_addr);
+
+        // Accept a connection request
+        int nmSocket = accept(sock_fd, (struct sockaddr*) &nm_addr, &nm_addr_len);
+        if (nmSocket < 0) {
+            perror("Error accepting connection");
+            exit(EXIT_FAILURE);
+        }
+
+        // Receive clientRequest
+        ClientRequest clientRequest;
+        if (recv(nmSocket, &clientRequest, sizeof(ClientRequest), 0) < 0) {
+            perror("Error receiving client request");
+            exit(EXIT_FAILURE);
+        }
+
+        // Process clientRequest
+        /* TBD */
+
+        // Send SUCCESS ACK to NM
+        ackPacket nmAck;
+        nmAck.errorCode = SUCCESS;
+        nmAck.ack = SUCCESS_ACK;
+        if (send(nmSocket, &nmAck, sizeof(ackPacket), 0) < 0) {
+            perror("Error sending ack packet to NM");
+            exit(EXIT_FAILURE);
+        }
+
+        // Close the socket
+        close(nmSocket);
     }
     return NULL;
 }
@@ -36,17 +87,16 @@ void* clientThread(void* arg) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s <serverID>\n", argv[0]);
+    if (argc != 4) {
+        fprintf(stderr, "Usage: %s <serverID> <CLT_PORT> <NM_PORT>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 
     // Make a ServerDetails with the given serverID
-    ServerDetails serverDetails;
     serverDetails.serverID = atoi(argv[1]);
     strcpy(serverDetails.serverIP, MY_SRV_IP); // Replace with your actual IP
-    serverDetails.port_nm = MY_SRV_NM_PORT;
-    serverDetails.port_client = MY_SRV_CLT_PORT;
+    serverDetails.port_client = atoi(argv[2]);
+    serverDetails.port_nm = atoi(argv[3]);
     serverDetails.online = false;
 
     // Create a socket
