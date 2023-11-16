@@ -41,10 +41,18 @@ typedef struct ClientRequest {
  * @brief ServerDetails struct to store server details
  * 
  * @param serverID : server ID (unique)
+ * @param serverIP : server IP address
+ * @param port_nm : port for communication with Naming Server
+ * @param port_client : port for communication with client
+ * @param accessible_paths : list of accessible paths for this storage server
  * 
  */
 typedef struct ServerDetails {
     int serverID;
+    char serverIP[IP_LEN];
+    int port_nm;
+    int port_client;
+    char accessible_paths[MAX_PATHS][MAX_PATH_LEN];
 } ServerDetails;
 
 /**

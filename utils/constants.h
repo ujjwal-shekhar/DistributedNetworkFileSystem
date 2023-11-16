@@ -13,10 +13,16 @@
 #define MAX_REQUEST_SIZE 1024
 #define MAX_ARG_LEN 256
 #define MAX_LISTEN_BACKLOG 20
+#define MAX_PATH_LEN 256 
+#define MAX_PATHS 1000
 
 // Timeout intervals
 #define MAX_NM_TO_CLT_TIMEOUT 30
 #define MAX_CLT_TO_NM_TIMEOUT 30
+#define MAX_NM_TO_SRV_TIMEOUT 30
+#define MAX_SRV_TO_NM_TIMEOUT 30
+#define MAX_CLT_TO_SRV_TIMEOUT 30
+#define MAX_SRV_TO_CLT_TIMEOUT 30
 
 // Valid commands for the client
 #define CREATEDIR "CREATE_DIR"
@@ -61,6 +67,7 @@ typedef enum {
 
 // Standard Ports
 #define NM_CLT_PORT 8080 // NM listens for clients
+#define NM_NEW_SRV_PORT 5049 // NM listens for new servers
 
 
 #endif // CONSTANTS_H
