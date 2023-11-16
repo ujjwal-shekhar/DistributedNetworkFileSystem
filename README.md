@@ -28,6 +28,7 @@ make
 
 ## Clients
 
-# Bibliography and sources referred to
+# Bibliography and Assumptions
+- ctrl-Z to exit a client
 
 # Usage of AI tools

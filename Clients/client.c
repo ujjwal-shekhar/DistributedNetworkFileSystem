@@ -116,8 +116,6 @@ int main() {
             exit(-1);
         }
 
-        // printf("I have sent something\n");
-
         // Receive the AckPacket from server
         ackPacket ack;
         if (recv(sock_fd, &ack, sizeof(ack), 0) < 0) {

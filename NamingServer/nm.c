@@ -4,21 +4,37 @@
 // Make a list of client fds
 int client_fds[MAX_CLIENTS];
 
+// List of client threads
+pthread_t clientThreads[MAX_CLIENTS];
+
 // Function to handle client communication in a separate thread
 void* handleClientCommunication(void* arg) {
     int clientSocket = *((int*)arg);
 
-    // Add your logic to handle communication with the client
-    // For example, you can receive requests, process them, and send acknowledgments
+    while (1) {
+        // Add your logic to handle communication with the client
+        // For example, you can receive requests, process them, and send acknowledgments
+        // Receive a struct Client Request
+        ClientRequest clientRequest;
+        if (recv(clientSocket, &clientRequest, sizeof(clientRequest), 0) < 0) {
+            perror("Error receiving client request");
+            break;  // Exit the loop if there is an error
+        }
 
-    // Send a success acknowledgment to the client
-    ackPacket successAck;
-    successAck.errorCode = SUCCESS;
-    successAck.ack = SUCCESS_ACK;
+        // Print the Request details
+        printf("Argument 1: %s\n", clientRequest.arg1);
 
-    if (send(clientSocket, &successAck, sizeof(ackPacket), 0) < 0) {
-        perror("Error sending success acknowledgment to client");
+        // Send a success acknowledgment to the client
+        ackPacket successAck;
+        successAck.errorCode = SUCCESS;
+        successAck.ack = SUCCESS_ACK;
+
+        if (send(clientSocket, &successAck, sizeof(ackPacket), 0) < 0) {
+            perror("Error sending success acknowledgment to client");
+            break;  // Exit the loop if there is an error
+        }
     }
+    printf("Exiting thread...\n"); 
 
     // Close the client socket when communication is done
     close(clientSocket);
@@ -26,7 +42,7 @@ void* handleClientCommunication(void* arg) {
     // Mark the slot as available
     *((int*)arg) = -1;
 
-    return NULL;
+    pthread_exit(NULL);
 }
 
 int main() {
@@ -87,16 +103,13 @@ int main() {
         // Accept a new connection
         client_fds[clientIndex] = accept(serverSocket, (struct sockaddr*)&clientAddr, &clientLen);
 
-        printf("The client_fd : %d", client_fds[clientIndex]);
-
         if (client_fds[clientIndex] < 0) {
             perror("Error accepting client connection");
             continue;
         }
 
         // Spawn a new thread to handle client communication
-        pthread_t clientThread;
-        if (pthread_create(&clientThread, NULL, handleClientCommunication, (void*)&client_fds[clientIndex]) != 0) {
+        if (pthread_create(&clientThreads[clientIndex], NULL, handleClientCommunication, (void*)&client_fds[clientIndex]) != 0) {
             perror("Error creating client communication thread");
             close(client_fds[clientIndex]);
             // Mark the slot as available
@@ -105,7 +118,7 @@ int main() {
         }
 
         // Detach the thread to avoid memory leaks
-        pthread_detach(clientThread);
+        pthread_detach(clientThreads[clientIndex]);
     }
 
     // Close the server socket (this won't be reached in this simple example)
