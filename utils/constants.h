@@ -6,12 +6,13 @@
 // Define your constants here
 #define MAX_CLIENTS 100
 #define MAX_SERVERS 10
-#define SOCKET_FAMILY PF_INET
+#define SOCKET_FAMILY AF_INET
 #define SOCKET_TYPE SOCK_STREAM
 #define SOCKET_PROTOCOL 0
 #define IP_LEN 16
 #define MAX_REQUEST_SIZE 1024
 #define MAX_ARG_LEN 256
+#define MAX_LISTEN_BACKLOG 20
 
 // Timeout intervals
 #define MAX_NM_TO_CLT_TIMEOUT 30

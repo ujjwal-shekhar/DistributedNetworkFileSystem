@@ -17,9 +17,6 @@
  */
 typedef struct ClientDetails {
     int clientID;
-    int clientSocket;
-    int clientPort;
-    char clientIP[IP_LEN];
 } ClientDetails;
 
 /**
@@ -27,6 +24,9 @@ typedef struct ClientDetails {
  * 
  * @param clientDetails : client details
  * @param requestType : request type
+ * @param num_args : number of arguments
+ * @param arg1 : first argument
+ * @param arg2 : second argument
  * 
  */
 typedef struct ClientRequest {
@@ -41,6 +41,7 @@ typedef struct ClientRequest {
  * @brief ServerDetails struct to store server details
  * 
  * @param serverID : server ID (unique)
+ * 
  */
 typedef struct ServerDetails {
     int serverID;
