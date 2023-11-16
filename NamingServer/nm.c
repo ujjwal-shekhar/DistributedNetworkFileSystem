@@ -8,6 +8,9 @@ pthread_t serverNMThreads[MAX_CLIENTS];         // List of client <-> NM interac
 ServerDetails servers[MAX_SERVERS];             // List of servers
 sem_t servers_initialized;                      // Semaphore to wait for MIN_SERVERS to come alive before client requests begin
 
+int num_servers_running = 0;                    // Keep track of the number of servers running
+sem_t num_servers_running_mutex;                // Binary semaphore to lock the critical section    
+
 // Function to handle client communication in a separate thread
 void* handleClientCommunication(void* arg) {
     int clientSocket = *((int*)arg);
@@ -100,6 +103,7 @@ void* listenServerRequests(void* arg) {
     printf("\x1b[32mNaming Server is listening for SERVER connections...\x1b[0m\n");
 
     while (1) {
+    printf("Servers listener is woken up\n");
         struct sockaddr_in clientAddr;
         socklen_t clientLen = sizeof(clientAddr);
 
@@ -151,7 +155,13 @@ void* listenServerRequests(void* arg) {
             }
 
             // Post to servers_initialized semaphore
-            sem_post(&servers_initialized);
+            sem_wait(&num_servers_running_mutex);
+                num_servers_running++;
+            sem_post(&num_servers_running_mutex);
+
+            if (num_servers_running == NUM_INIT_SERVERS) {
+                sem_post(&servers_initialized);
+            }
 
             // Spawn an alive thread
             pthread_t aliveThreadId;
@@ -177,6 +187,8 @@ void* listenClientRequests(void* arg) {
     for (int i = 0; i < MAX_CLIENTS; i++) {
         client_fds[i] = -1;
     }
+
+    printf("Clients listener is woken up\n");
 
     // Create and configure the server socket
     int serverSocket = socket(SOCKET_FAMILY, SOCKET_TYPE, SOCKET_PROTOCOL);
@@ -255,6 +267,15 @@ void* listenClientRequests(void* arg) {
 }
 
 int main() {
+    // Now, a semaphore will be initialized to 
+    // minus(NUM_INIT_SERVERS). Every time 
+    // a server is initialized in the listen server
+    // connection requests, we will post here
+    // When it is finally zero, the program will 
+    // continue
+    sem_init(&servers_initialized, 0, 0);
+    sem_init(&num_servers_running_mutex, 0, 1);
+
     // I will first spawn a thread to listen 
     // for incoming storage server requests
     pthread_t listenServerThreadId;
@@ -262,14 +283,6 @@ int main() {
         perror("Error creating listenServerRequests thread");
         exit(EXIT_FAILURE);
     }
-
-    // Now, a semaphore will be initialized to 
-    // minus(NUM_INIT_SERVERS). Every time 
-    // a server is initialized in the listen server
-    // connection requests, we will post here
-    // When it is finally zero, the program will 
-    // continue
-    sem_init(&servers_initialized, 0, 1 - NUM_INIT_SERVERS);
 
     // Wait for the servers to be initialized
     sem_wait(&servers_initialized);
