@@ -5,6 +5,7 @@
 
 # define NUM_CHARS 256
 # define MAX_STORAGE_SERVERS 20
+# define MAX_WORD_LEN 100
 
 bool inStorageServer[MAX_STORAGE_SERVERS];
 // The code for tries was referred to from Jacob Sorber's code with changes fine-tuned to our use case
@@ -12,6 +13,7 @@ bool inStorageServer[MAX_STORAGE_SERVERS];
 typedef struct trienode{
     struct trienode *children[NUM_CHARS];
     bool inStorageServer[MAX_STORAGE_SERVERS];
+    bool isFile;
     bool isEndOfWord;
 } trienode;
 
@@ -26,7 +28,10 @@ trienode* createnode(){
         node->inStorageServer[i] = false;
     }
 
+    node->isFile = false;
     node->isEndOfWord = false;
+
+    return node;
 }
 
 void trieinsert(trienode** root, char* signedtext, int serverID){
@@ -45,10 +50,19 @@ void trieinsert(trienode** root, char* signedtext, int serverID){
         }
 
         curr = curr->children[text[i]];
+        if(text[i]=='/'){
+            curr->isFile = false;
+            curr->inStorageServer[serverID] = true;
+            curr->isEndOfWord = true;
+        }
     }
 
-    curr->isEndOfWord = true;
-    curr->inStorageServer[serverID] = true;
+    if(text[length-1]!='/'){
+        curr->isFile = true;
+        curr->isEndOfWord = true;
+        curr->inStorageServer[serverID] = true;
+    }
+    
 }
 
 bool search_trie(trienode* root, char* signedtext){
@@ -68,32 +82,34 @@ bool search_trie(trienode* root, char* signedtext){
         curr = curr->children[text[i]];
     }
 
-    // mark the servers in which this file is present
-    for(int i=0; i<MAX_STORAGE_SERVERS; i++){
-        if(curr->inStorageServer[i]){
-            inStorageServer[i] = true;
+    if(curr->isEndOfWord){
+        // mark the servers in which this file is present
+        for(int i=0; i<MAX_STORAGE_SERVERS; i++){
+            if(curr->inStorageServer[i]){
+                inStorageServer[i] = true;
+            }
         }
     }
 
     return curr->isEndOfWord;
 }
 
-void print_trie(trienode* root){
-    if(root == NULL){
-        return;
-    }
+// void print_trie(trienode* root){
+//     if(root == NULL){
+//         return;
+//     }
 
-    for(int i=0; i<NUM_CHARS; i++){
-        if(root->children[i] != NULL){
-            printf("%c", i);
-            print_trie(root->children[i]);
-        }
-    }
+//     for(int i=0; i<NUM_CHARS; i++){
+//         if(root->children[i] != NULL){
+//             printf("%c", i);
+//             print_trie(root->children[i]);
+//         }
+//     }
 
-    if(root->isEndOfWord){
-        printf("\n");
-    }
-}
+//     if(root->isEndOfWord){
+//         printf("\n");
+//     }
+// }
 
 void reset_inStorageServer(){
     for(int i=0; i<MAX_STORAGE_SERVERS; i++){
@@ -102,6 +118,7 @@ void reset_inStorageServer(){
 }
 
 void print_inStorageServer(){
+    printf("In storage servers : ");
     for(int i=0; i<MAX_STORAGE_SERVERS; i++){
         if(inStorageServer[i]){
             printf("%d ", i);
@@ -114,16 +131,31 @@ int main(){
 
     trienode* root = NULL;
 
-    trieinsert(&root, "hello", 1);
-    trieinsert(&root, "hell", 2);
-    trieinsert(&root, "helloworld", 3);
-    trieinsert(&root, "cat", 4);
-    trieinsert(&root, "dog", 5);
-    trieinsert(&root, "cattle", 6);
-    trieinsert(&root, "cattle", 7);
+    trieinsert(&root, "/dir1/dir2/file1.txt", 1);
+    trieinsert(&root, "/dir1/dir2/file2.txt", 1);
+    trieinsert(&root, "/dir1/dir2/file3.txt", 3);
+    trieinsert(&root, "/dir1/dir2/file1.txt", 2);
+    trieinsert(&root, "/dir1/dir2/file1.txt", 3);
+    trieinsert(&root, "/dir1/dir2/", 3);
+    trieinsert(&root, "/dir3/dir2/file1.txt", 4);
+    trieinsert(&root, "/dir3/dir2/file1.txt", 5);
+    trieinsert(&root, "/dir4/file1.txt", 6);
+    trieinsert(&root, "/file1.txt", 7);
 
-    print_trie(root);
+    // print_trie(root);
 
     // search for sample words
+    printf("Searching for '/dir1/dir2/file1.txt' : %d\n", search_trie(root, "/dir1/dir2/file1.txt"));
+    print_inStorageServer();
+    reset_inStorageServer();
+
+    printf("Searching for '/dir1/dir2/fil' : %d\n", search_trie(root, "/dir1/dir2/fil"));
+    print_inStorageServer();
+    reset_inStorageServer();
+
+    printf("Searching for '/file1.txt' : %d\n", search_trie(root, "/file1.txt"));
+    print_inStorageServer();
+    reset_inStorageServer();
+
     
 }
