@@ -1,71 +1,51 @@
-############################################################################
-# 'A Generic Makefile for Building Multiple main() Targets in $PWD'
-# Author:  Robert A. Nader (2012)
-# Email: naderra at some g
-# Web: xiberix
-############################################################################
-#  The purpose of this makefile is to compile to executable all C source
-#  files in CWD, where each .c file has a main() function, and each object
-#  links with a common LDFLAG.
-#
-#  This makefile should suffice for simple projects that require building
-#  similar executable targets.
-#
-#  What YOU do:
-#
-#  Set PRG_SUFFIX_FLAG below to either 0 or 1 to enable or disable
-#  the generation of a .exe suffix on executables
-#
-#  Set CFLAGS and LDFLAGS according to your needs.
-#
-#  What this makefile does automagically:
-#
-#  Sets SRC to a list of *.c files in PWD using wildcard.
-#  Sets PRGS BINS and OBJS using pattern substitution.
-#  Compiles each individual .c to .o object file.
-#  Links each individual .o to its corresponding executable.
-#
-###########################################################################
-#
+# Set PRG_SUFFIX_FLAG below to either 0 or 1 to enable or disable
+# the generation of a .exe suffix on executables
 PRG_SUFFIX_FLAG := 0
-#
+
 LDFLAGS := -pthread
 CFLAGS_INC := -Iutils  # Add your include directories here
 CFLAGS := -g -Wall $(CFLAGS_INC)
-#
-## ==================- NOTHING TO CHANGE BELOW THIS LINE ===================
-##
+
 # Update source file locations
-SRCS := $(wildcard *.c Clients/*.c NamingServer/*.c StorageServers/*.c utils/*.c)
-PRGS := $(patsubst %.c,%,$(SRCS))
-PRG_SUFFIX=.exe
-BINS := $(patsubst %,%$(PRG_SUFFIX),$(PRGS))
-## OBJS are automagically compiled by make.
-OBJS := $(patsubst %,%.o,$(PRGS))
-##
-all : $(BINS)
-##
-## For clarity sake we make use of:
-.SECONDEXPANSION:
-OBJ = $(patsubst %$(PRG_SUFFIX),%.o,$@)
-ifeq ($(PRG_SUFFIX_FLAG),0)
-        BIN = $(patsubst %$(PRG_SUFFIX),%,$@)
-else
-        BIN = $@
-endif
-## Compile the executables
-%$(PRG_SUFFIX) : $(OBJS)
-	$(CC) $(OBJ) $(LDFLAGS) -o $(BIN)
-##
-## $(OBJS) should be automagically removed right after linking.
-##
-veryclean:
-	ifeq ($(PRG_SUFFIX_FLAG),0)
-		$(RM) $(PRGS)
-	else
-		$(RM) $(BINS)
-	endif
-##
+SRCS := $(wildcard NamingServer/*.c Clients/*.c StorageServers/*.c utils/*.c)
+
+# Naming Server
+NM_SRC := $(wildcard NamingServer/nm.c)
+NM_OBJS := $(patsubst %.c,%.o,$(NM_SRC))
+NM_BIN := nm
+
+# Clients
+CLIENT_SRC := $(wildcard Clients/client.c)
+CLIENT_OBJS := $(patsubst %.c,%.o,$(CLIENT_SRC))
+CLIENT_BIN := client
+
+# Storage Servers
+SERVER_SRC := $(wildcard StorageServers/server.c)
+SERVER_OBJS := $(patsubst %.c,%.o,$(SERVER_SRC))
+SERVER_BIN := server
+
+# All objects
+OBJS := $(filter-out $(NM_OBJS) $(CLIENT_OBJS) $(SERVER_OBJS), $(patsubst %.c,%.o,$(SRCS)))
+
+all: $(NM_BIN) $(CLIENT_BIN) $(SERVER_BIN)
+
+# Compile Naming Server
+$(NM_BIN): $(NM_OBJS) $(OBJS)
+	$(CC) $(NM_OBJS) $(OBJS) $(LDFLAGS) -o $(NM_BIN)
+
+# Compile Clients
+$(CLIENT_BIN): $(CLIENT_OBJS) $(OBJS)
+	$(CC) $(CLIENT_OBJS) $(OBJS) $(LDFLAGS) -o $(CLIENT_BIN)
+
+# Compile Storage Servers
+$(SERVER_BIN): $(SERVER_OBJS) $(OBJS)
+	$(CC) $(SERVER_OBJS) $(OBJS) $(LDFLAGS) -o $(SERVER_BIN)
+
+# Cleanup
+clean:
+	$(RM) $(NM_BIN) $(CLIENT_BIN) $(SERVER_BIN)
+
+veryclean: clean
+	$(RM) $(NM_OBJS) $(CLIENT_OBJS) $(SERVER_OBJS)
+
 rebuild: veryclean all
-##
-## eof Generic_Multi_Main_PWD.makefile
