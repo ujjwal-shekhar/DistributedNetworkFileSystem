@@ -16,7 +16,7 @@
 #define MAX_PATH_LEN 256 
 #define MAX_PATHS 1000
 #define MAX_ACK_EXTRA_INFO 100
-#define NUM_INIT_SERVERS 4
+#define NUM_INIT_SERVERS 1
 
 // Timeout intervals
 #define MAX_NM_TO_CLT_TIMEOUT 30
@@ -36,13 +36,16 @@
 
 // Enum for Request type
 typedef enum {
+    /* Priviledged */
     CREATE_DIR = 0,
+    DELETE_DIR,
+    DELETE_FILE,
+
+    /* Non-priviledged */
+    GET_FILE_INFO,
     CREATE_FILE,
     READ_FILE,
-    WRITE_FILE,
-    DELETE_FILE,
-    DELETE_DIR,
-    GET_FILE_INFO
+    WRITE_FILE
 } RequestType;
 
 // Enum for error codes
@@ -62,6 +65,7 @@ typedef enum {
     SUCCESS_ACK = 0,
     FAILURE_ACK,
     CHECK_ACK,
+    INIT_ACK,
     CNNCT_TO_SRV_ACK, // Send this to client, to get them ready for server connection
     STOP_ACK
 } AckBit;

@@ -123,15 +123,73 @@ int main() {
             exit(-1);
         }
 
-        // Check if the ack is a success
-        if (ack.ack == SUCCESS_ACK) {
-            printf("Request successful\n");
-        } else if (ack.ack == FAILURE_ACK) {
-            printf("Request failed\n");
-        } else if (ack.ack == STOP_ACK) {
-            printf("Request failed, server asked to STOP\n");
-            break;
-        } 
+        // Check if you got a FAILURE_ACK
+        // Inform the error on stdout
+        if (ack.ack == FAILURE_ACK) {
+            /* Make use of the error codes written */
+            printf("There was an error\n");
+            continue;
+        }
+
+        // Now, since the ack is not FAILURE
+        // Check if we need to connect to the server next
+        // will the NM serve our request on it'sown
+        if (ack.ack == INIT_ACK) { // NM will server our request
+            printf("Waiting for NM to reply with status\n");
+            // Receive the Job Status from NM
+
+            // Print the Job Status on stdout to inform the user
+        } else if (ack.ack == CNNCT_TO_SRV_ACK) { // We must connect to the server
+            printf("Time to send requests to the server\n");
+
+            // Receive the server details from NM
+            ServerDetails server;
+            if (recv(sock_fd, &server, sizeof(server), 0) < 0) {
+                printf("Error receiving server details from server\n");
+                exit(-1);
+            }
+
+            // Print the server details
+            printf("\nServer ID: %d\n", server.serverID);
+            printf("Server port_nm: %d\n", server.port_nm);
+            printf("Server port_client: %d\n", server.port_client);
+            printf("Server online: %d\n", server.online);
+
+            // Create new socket
+            int clt_srv_fd = socket(SOCKET_FAMILY, SOCKET_TYPE, SOCKET_PROTOCOL);
+            if (sock_fd < 0) {
+                printf("Error creating socket\n");
+                exit(-1);
+            }
+
+            // Create a sockaddr_in struct for the server
+            struct sockaddr_in storage_server_addr;
+            memset(&storage_server_addr, 0, sizeof(storage_server_addr));
+            storage_server_addr.sin_family = SOCKET_FAMILY;
+            storage_server_addr.sin_port = htons(server.port_client);
+            storage_server_addr.sin_addr.s_addr = inet_addr(server.serverIP);
+
+            // connect() to the server on given IP and port
+            // Connect to the server
+            if (connect(clt_srv_fd, (struct sockaddr*) &storage_server_addr, sizeof(storage_server_addr)) < 0) {
+                printf("Error connecting to server\n");
+                exit(-1);
+            }
+
+            printf("Connecting to server\n");
+
+            // send() the request
+            if (send(clt_srv_fd, &clientRequest, sizeof(clientRequest), 0) < 0) {
+                printf("Error sending client request to storage server\n");
+                exit(-1);
+            }
+
+            // Wait for the ack
+            if (recv(clt_srv_fd, &clientRequest, sizeof(clientRequest), 0) < 0) {
+                printf("Error receiving ack from storage server\n");
+                exit(-1);
+            }
+        }
     }
 
     // Close the socket
