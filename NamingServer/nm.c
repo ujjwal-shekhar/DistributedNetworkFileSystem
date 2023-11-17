@@ -15,6 +15,17 @@ sem_t num_servers_running_mutex;                // Binary semaphore to lock the 
 void* handleClientCommunication(void* arg) {
     int clientSocket = *((int*)arg);
 
+    // // Print all the server's information
+    // // Print all servers' info
+    // sem_wait(&num_servers_running_mutex);
+    //     for (int i = 0; i < num_servers_running; i++) {
+    //         printf("\nServer ID: %d\n", servers[i].serverID);
+    //         printf("Server port_nm: %d\n", servers[i].port_nm);
+    //         printf("Server port_client: %d\n", servers[i].port_client);
+    //         printf("Server online: %d\n", servers[i].online);
+    //     }
+    // sem_post(&num_servers_running_mutex);
+
     while (1) {
         // Add your logic to handle communication with the client
         // For example, you can receive requests, process them, and send acknowledgments
@@ -38,65 +49,73 @@ void* handleClientCommunication(void* arg) {
         if (ss_num >= 0 && ss_num < MAX_SERVERS) {
             // Check if the server is online
             if (servers[ss_num].online) {
-                
+                // Check if the Request_type is one in which 
+                // we need to send the client details of the SS
+                if (
+                    clientRequest.requestType == READ_FILE ||
+                    clientRequest.requestType == WRITE_FILE ||
+                    clientRequest.requestType == GET_FILE_INFO
+                ) {
+                    // Once you get the storage server details
+                    // send ACK bit with ACK_TYPE = CNNCT_TO_SRV_ACK
+                    // Handle this interaction in Client <-> Server
+                    ackPacket cltAck;
+                    cltAck.ack = CNNCT_TO_SRV_ACK;
+                    cltAck.errorCode = SUCCESS;
+                    if (send(clientSocket, &cltAck, sizeof(cltAck), 0) < 0) {
+                        perror("Error sending client request");
+                        break;
+                    }
+
+                    // Your job is done, continue to accept requests
+                } else {
+                    // This will be different now, We will send 
+                    // the clientRequest ourselves instead of 
+                    // sending the client details to the storage
+                    // server. The storage server will then
+                    // send the ACK bit back to us. We will
+                    // then send the ACK bit back to the client.
+                    
+                    // Send the clientRequest on the serverIP
+                    // and port_nm
+                    ackPacket cltAck;
+                    cltAck.ack = INIT_ACK;
+                    cltAck.errorCode = SUCCESS;
+                    if (send(clientSocket, &cltAck, sizeof(cltAck), 0) < 0) {
+                        perror("Error sending client request");
+                        break;
+                    }
+
+                    // Send it over
+                    
+                }
+
             } else {
                 // The server is not online, handle appropriately
                 // (e.g., send an error acknowledgment to the client)
                 // Send SERVER_OFFLINE with FAILURE_ACK to the client
                 // The server is not online, send an error acknowledgment to the client
-            ackPacket failureAck;
-            failureAck.errorCode = SERVER_OFFLINE;
-            failureAck.ack = FAILURE_ACK;
-
-            if (send(nmSocket, &failureAck, sizeof(ackPacket), 0) < 0) {
-                perror("Error sending failure acknowledgment to client");
+                ackPacket cltAck;
+                printf("CASE 3\n");
+                cltAck.ack = FAILURE_ACK;
+                cltAck.errorCode = SERVER_OFFLINE;
+                if (send(clientSocket, &cltAck, sizeof(cltAck), 0) < 0) {
+                    perror("Error sending client request");
+                    break;
+                }
             }
-
-            // Close the socket
-            close(nmSocket);
-
-            // Exit the loop
-            break;
-
-            }
+            
         } else {
             // Invalid ss_num, handle appropriately
             // (e.g., send an error acknowledgment to the client)
             // Send WRONG_PATH with FAILURE_ACK to the client
-        }
-
-        // Check if the Request_type is one in which 
-        // we need to send the client details of the SS
-        if (
-            clientRequest.requestType == READ_FILE ||
-            clientRequest.requestType == WRITE_FILE ||
-            clientRequest.requestType == GET_FILE_INFO
-        ) {
-            // Once you get the storage server details
-            // send ACK bit with ACK_TYPE = CNNCT_TO_SRV_ACK
-            // Handle this interaction in Client <-> Server
-        } else {
-            // This will be different now, We will send 
-            // the clientRequest ourselves instead of 
-            // sending the client details to the storage
-            // server. The storage server will then
-            // send the ACK bit back to us. We will
-            // then send the ACK bit back to the client.
-            
-            // Send the clientRequest on the serverIP
-            // and port_nm
-
-
-        }
-
-        // Send a success acknowledgment to the client
-        ackPacket successAck;
-        successAck.errorCode = SUCCESS;
-        successAck.ack = SUCCESS_ACK;
-
-        if (send(clientSocket, &successAck, sizeof(ackPacket), 0) < 0) {
-            perror("Error sending success acknowledgment to client");
-            break;  // Exit the loop if there is an error
+            ackPacket cltAck;
+            cltAck.ack = FAILURE_ACK;
+            cltAck.errorCode = WRONG_PATH;
+            if (send(clientSocket, &cltAck, sizeof(cltAck), 0) < 0) {
+                perror("Error sending client request");
+                break;
+            }
         }
     }
 
@@ -186,8 +205,6 @@ void* listenServerRequests(void* arg) {
         // Search for the server in the servers list
         int serverID = receivedServerDetails.serverID;
 
-        printf("Received server ID: %d\n", serverID);
-
         if (servers[serverID].online) {
             // Server is already online, send FAILURE_ACK
             // With error code for server already registered
@@ -202,7 +219,17 @@ void* listenServerRequests(void* arg) {
             close(storageServerSocket);
         } else {
             // Server is not online, register it
-            servers[serverID] = receivedServerDetails;
+            sem_wait(&num_servers_running_mutex);
+                servers[serverID] = receivedServerDetails;
+
+                printf("\nServer Details\n");
+                printf("Server ID: %d\n", serverID);
+                printf("Server online: %d\n", servers[serverID].online);
+                printf("NM Port: %d\n", servers[serverID].port_nm);
+                printf("Clt Port: %d\n", servers[serverID].port_client);
+
+                servers[serverID].online = true;
+            sem_post(&num_servers_running_mutex);
 
             // Send SUCCESS_ACK to the server
             ackPacket successAck;

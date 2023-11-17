@@ -3,8 +3,6 @@
 
 #define MY_SRV_IP "127.0.0.1"
 ServerDetails serverDetails;
-// #define MY_SRV_NM_PORT 6060
-// #define MY_SRV_CLT_PORT 7070
 
 void* aliveThreadReply(void* arg) {
     // Placeholder implementation for aliveThread
@@ -42,7 +40,7 @@ void* nmThread(void* arg) {
     }
 
     struct sockaddr_in nm_addr;
-    int nm_addr_len = sizeof(nm_addr);
+    socklen_t nm_addr_len = sizeof(nm_addr);
 
     // Accept a connection request
     int nmSocket = accept(sock_fd, (struct sockaddr*) &nm_addr, &nm_addr_len);
@@ -97,7 +95,7 @@ int main(int argc, char *argv[]) {
     strcpy(serverDetails.serverIP, MY_SRV_IP); // Replace with your actual IP
     serverDetails.port_client = atoi(argv[2]);
     serverDetails.port_nm = atoi(argv[3]);
-    serverDetails.online = false;
+    serverDetails.online = true;
 
     // Create a socket
     int sock_fd = socket(SOCKET_FAMILY, SOCKET_TYPE, SOCKET_PROTOCOL);

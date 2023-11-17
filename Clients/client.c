@@ -123,15 +123,48 @@ int main() {
             exit(-1);
         }
 
-        // Check if the ack is a success
-        if (ack.ack == SUCCESS_ACK) {
-            printf("Request successful\n");
-        } else if (ack.ack == FAILURE_ACK) {
-            printf("Request failed\n");
-        } else if (ack.ack == STOP_ACK) {
-            printf("Request failed, server asked to STOP\n");
-            break;
-        } 
+        // Check if you got a FAILURE_ACK
+        // Inform the error on stdout
+        if (ack.ack == FAILURE_ACK) {
+            /* Make use of the error codes written */
+            printf("There was an error\n");
+            continue;
+        }
+
+        // Now, since the ack is not FAILURE
+        // Check if we need to connect to the server next
+        // will the NM serve our request on it'sown
+        if (ack.ack == INIT_ACK) { // NM will server our request
+            printf("Waiting for NM to reply with status\n");
+            // Receive the Job Status from NM
+
+            // Print the Job Status on stdout to inform the user
+        } else if (ack.ack == CNNCT_TO_SRV_ACK) { // We must connect to the server
+            printf("Time to send requests to the server\n");
+
+            // Receive the server details from NM
+
+            // connect() to the server on given IP and port
+
+            // send() the request
+
+            // Wait for the ack
+
+        }
+
+        // // Check if the ack is a success
+        // if (ack.ack == SUCCESS_ACK) {
+        //     printf("Request successful\n");
+        // } else if (ack.ack == FAILURE_ACK) {
+        //     printf("Request failed\n");
+        // } else if (ack.ack == INIT_ACK) {
+        //     printf("Request initiated by NM\n");
+        // } else if (ack.ack == STOP_ACK) {
+        //     printf("Request failed, server asked to STOP\n");
+        //     break;
+        // } else if (ack.ack == CNNCT_TO_SRV_ACK) {
+        //     printf("Expect server details\n");
+        // }
     }
 
     // Close the socket
