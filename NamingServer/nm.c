@@ -97,7 +97,6 @@ void* handleClientCommunication(void* arg) {
                     /* TBD TBD TBD */
                     /* EZ do all of this on on another
                      thread to get concurrent access : TBD */
-                     printf("c4");
                     int storage_fd = socket(SOCKET_FAMILY, SOCKET_TYPE, SOCKET_PROTOCOL);
 
                     // Create a sockaddr_in struct for the storage socket
@@ -108,14 +107,12 @@ void* handleClientCommunication(void* arg) {
                     server_addr.sin_addr.s_addr = inet_addr(servers[ss_num].serverIP);
 
                     // connect() with the server
-                     printf("c5");
                     if (connect(storage_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
                         perror("Can't connect to storage server");
                         break;
                     }
 
                     // send() to the storage server
-                     printf("c6");
                     if (send(storage_fd, (struct sockaddr *)&server_addr, sizeof(server_addr), 0) < 0) {
                         perror("Can't send to storage server");
                         break;
@@ -123,14 +120,13 @@ void* handleClientCommunication(void* arg) {
 
                     // Receive the ack from the storage server
                     AckPacket nmAck;
-                     printf("c7");
                     if (recv(storage_fd, &nmAck, sizeof(AckPacket), 0) < 0) {
                         perror("Error receiving ack from storage server");
                         break;
                     }
 
                     // Forward the ACK packet to the client
-                     printf("c8");
+                    printf("c8");
                     if (send(clientSocket, &nmAck, sizeof(AckPacket), 0) < 0) {
                         perror("Error sending ACK");
                         break;

@@ -27,7 +27,6 @@ void* nmThread(void* arg) {
     server_addr.sin_port = htons(serverDetails.port_nm);
     server_addr.sin_addr.s_addr = INADDR_ANY;
 
-    printf("c1");
 
     // Bind the socket to the port
     if (bind(sock_fd, (struct sockaddr*) &server_addr, sizeof(server_addr)) < 0) {
@@ -35,7 +34,6 @@ void* nmThread(void* arg) {
         exit(EXIT_FAILURE);
     }
 
-    printf("c2");
     // Listen for incoming connections
     if (listen(sock_fd, MAX_LISTEN_BACKLOG) < 0) {
         perror("Error listening for connections");
@@ -45,7 +43,6 @@ void* nmThread(void* arg) {
     struct sockaddr_in nm_addr;
     socklen_t nm_addr_len = sizeof(nm_addr);
 
-    printf("c3");
     // Accept a connection request
     int nmSocket = accept(sock_fd, (struct sockaddr*) &nm_addr, &nm_addr_len);
     if (nmSocket < 0) {
@@ -55,7 +52,6 @@ void* nmThread(void* arg) {
 
     while (1) {
         // Receive clientRequest
-    printf("c4");
         ClientRequest clientRequest;
         if (recv(nmSocket, &clientRequest, sizeof(ClientRequest), 0) < 0) {
             perror("Error receiving client request");
@@ -88,7 +84,6 @@ void* nmThread(void* arg) {
 void* clientThread(void* arg) {
     // Create a socket
     int sock_fd = socket(SOCKET_FAMILY, SOCKET_TYPE, SOCKET_PROTOCOL);
-    printf("Started listening on port1 %d\n", serverDetails.port_client);
 
     // Create a sockaddr_in struct for the server
     struct sockaddr_in server_addr;
@@ -97,13 +92,11 @@ void* clientThread(void* arg) {
     server_addr.sin_port = htons(serverDetails.port_client);
     server_addr.sin_addr.s_addr = INADDR_ANY;
 
-    printf("Started listening on port2 %d\n", serverDetails.port_client);
     // Bind the socket to the port
     if (bind(sock_fd, (struct sockaddr*) &server_addr, sizeof(server_addr)) < 0) {
         perror("Error binding socket");
         exit(EXIT_FAILURE);
     }
-    printf("Started listening on port3 %d\n", serverDetails.port_client);
 
     // Listen for incoming connections
     if (listen(sock_fd, MAX_LISTEN_BACKLOG) < 0) {
@@ -210,8 +203,6 @@ int main(int argc, char *argv[]) {
         printf("Error: NM returned FAILURE_ACK\n");
         exit(EXIT_FAILURE);
     }
-
-    printf("NM returned\n");
 
     // Now, spawn an aliveThread. This thread 
     // receives a "CHECK" packet from
