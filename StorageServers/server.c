@@ -27,12 +27,15 @@ void* nmThread(void* arg) {
     server_addr.sin_port = htons(serverDetails.port_nm);
     server_addr.sin_addr.s_addr = INADDR_ANY;
 
+    printf("c1");
+
     // Bind the socket to the port
     if (bind(sock_fd, (struct sockaddr*) &server_addr, sizeof(server_addr)) < 0) {
         perror("Error binding socket");
         exit(EXIT_FAILURE);
     }
 
+    printf("c2");
     // Listen for incoming connections
     if (listen(sock_fd, MAX_LISTEN_BACKLOG) < 0) {
         perror("Error listening for connections");
@@ -42,6 +45,7 @@ void* nmThread(void* arg) {
     struct sockaddr_in nm_addr;
     socklen_t nm_addr_len = sizeof(nm_addr);
 
+    printf("c3");
     // Accept a connection request
     int nmSocket = accept(sock_fd, (struct sockaddr*) &nm_addr, &nm_addr_len);
     if (nmSocket < 0) {
@@ -51,6 +55,7 @@ void* nmThread(void* arg) {
 
     while (1) {
         // Receive clientRequest
+    printf("c4");
         ClientRequest clientRequest;
         if (recv(nmSocket, &clientRequest, sizeof(ClientRequest), 0) < 0) {
             perror("Error receiving client request");
@@ -58,19 +63,24 @@ void* nmThread(void* arg) {
         }
 
         // Process clientRequest
-        /* TBD */
+        if (clientRequest.requestType == CREATE_DIR) {
+            printf("Creating directory\n");
+        } else if (clientRequest.requestType == CREATE_FILE) {
+            printf("Creating file\n");
+        } else if (clientRequest.requestType == DELETE_DIR) {
+            printf("Delete directory\n");
+        } else if (clientRequest.requestType == DELETE_FILE) {
+            printf("Delete file\n");
+        }
 
         // Send SUCCESS ACK to NM
-        ackPacket nmAck;
+        AckPacket nmAck;
         nmAck.errorCode = SUCCESS;
         nmAck.ack = SUCCESS_ACK;
-        if (send(nmSocket, &nmAck, sizeof(ackPacket), 0) < 0) {
+        if (send(nmSocket, &nmAck, sizeof(AckPacket), 0) < 0) {
             perror("Error sending ack packet to NM");
             exit(EXIT_FAILURE);
         }
-
-        // Close the socket
-        close(nmSocket);
     }
     return NULL;
 }
@@ -129,6 +139,15 @@ void* clientThread(void* arg) {
         } else if (clientRequest.requestType == GET_FILE_INFO) {
             printf("Get file info of : %s\n", clientRequest.arg1);
         }
+
+        // Send the ack bit to client
+        AckPacket ack;
+        ack.errorCode = SUCCESS;
+        ack.ack = SUCCESS_ACK;
+        if (send(cltSocket, &ack, sizeof(ack), 0) < 0) {
+            printf("Error sending ack to client\n");
+            exit(-1);
+        }
     }
     return NULL;
 }
@@ -178,10 +197,10 @@ int main(int argc, char *argv[]) {
     // The NM sends back an ack packet
     // Get the server ID assigned by NM to you
     // Store this server ID here
-    ackPacket nmAck;
+    AckPacket nmAck;
     
     // Receive the ack packet
-    if (recv(sock_fd, &nmAck, sizeof(ackPacket), 0) < 0) {
+    if (recv(sock_fd, &nmAck, sizeof(AckPacket), 0) < 0) {
         perror("Error receiving ack packet");
         exit(EXIT_FAILURE);
     }

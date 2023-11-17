@@ -59,16 +59,16 @@ typedef struct ServerDetails {
 } ServerDetails;
 
 /**
- * @brief ackPacket struct to send details
+ * @brief AckPacket struct to send details
  * 
  * @param errorCode : error code
  * @param ack : ack bit
  *
  */
-typedef struct ackPacket {
+typedef struct AckPacket {
     ErrorCode errorCode;
     AckBit ack;
     int extraInfo[MAX_ACK_EXTRA_INFO];
-} ackPacket;
+} AckPacket;
 
 #endif // STRUCTS_H

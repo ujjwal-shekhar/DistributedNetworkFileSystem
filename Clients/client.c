@@ -117,7 +117,7 @@ int main() {
         }
 
         // Receive the AckPacket from server
-        ackPacket ack;
+        AckPacket ack;
         if (recv(sock_fd, &ack, sizeof(ack), 0) < 0) {
             printf("Error receiving ack from server\n");
             exit(-1);
@@ -137,8 +137,17 @@ int main() {
         if (ack.ack == INIT_ACK) { // NM will server our request
             printf("Waiting for NM to reply with status\n");
             // Receive the Job Status from NM
+            if (recv(sock_fd, &ack, sizeof(ack), 0) < 0) {
+                printf("Error receiving ack from server\n");
+                exit(-1);
+            }
 
             // Print the Job Status on stdout to inform the user
+            if (ack.ack == SUCCESS_ACK) {
+                printf("SS completed your job\n");
+            } else {
+                printf("Job failed to complete\n");
+            }
         } else if (ack.ack == CNNCT_TO_SRV_ACK) { // We must connect to the server
             printf("Time to send requests to the server\n");
 
@@ -176,8 +185,6 @@ int main() {
                 exit(-1);
             }
 
-            printf("Connecting to server\n");
-
             // send() the request
             if (send(clt_srv_fd, &clientRequest, sizeof(clientRequest), 0) < 0) {
                 printf("Error sending client request to storage server\n");
@@ -185,9 +192,16 @@ int main() {
             }
 
             // Wait for the ack
-            if (recv(clt_srv_fd, &clientRequest, sizeof(clientRequest), 0) < 0) {
+            if (recv(sock_fd, &ack, sizeof(ack), 0) < 0) {
                 printf("Error receiving ack from storage server\n");
                 exit(-1);
+            }
+
+            // Print the response ack
+            if (ack.ack == SUCCESS_ACK) {
+                printf("Success!\n");
+            } else {
+                printf("Error!\n");
             }
         }
     }

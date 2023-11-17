@@ -58,7 +58,7 @@ void* handleClientCommunication(void* arg) {
                     // Once you get the storage server details
                     // send ACK bit with ACK_TYPE = CNNCT_TO_SRV_ACK
                     // Handle this interaction in Client <-> Server
-                    ackPacket cltAck;
+                    AckPacket cltAck;
                     cltAck.ack = CNNCT_TO_SRV_ACK;
                     cltAck.errorCode = SUCCESS;
                     if (send(clientSocket, &cltAck, sizeof(cltAck), 0) < 0) {
@@ -85,7 +85,7 @@ void* handleClientCommunication(void* arg) {
                     
                     // Send the clientRequest on the serverIP
                     // and port_nm
-                    ackPacket cltAck;
+                    AckPacket cltAck;
                     cltAck.ack = INIT_ACK;
                     cltAck.errorCode = SUCCESS;
                     if (send(clientSocket, &cltAck, sizeof(cltAck), 0) < 0) {
@@ -97,6 +97,47 @@ void* handleClientCommunication(void* arg) {
                     /* TBD TBD TBD */
                     /* EZ do all of this on on another
                      thread to get concurrent access : TBD */
+                     printf("c4");
+                    int storage_fd = socket(SOCKET_FAMILY, SOCKET_TYPE, SOCKET_PROTOCOL);
+
+                    // Create a sockaddr_in struct for the storage socket
+                    struct sockaddr_in server_addr;
+                    memset(&server_addr, 0, sizeof(server_addr));
+                    server_addr.sin_family = SOCKET_FAMILY;
+                    server_addr.sin_port = htons(servers[ss_num].port_nm);
+                    server_addr.sin_addr.s_addr = inet_addr(servers[ss_num].serverIP);
+
+                    // connect() with the server
+                     printf("c5");
+                    if (connect(storage_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+                        perror("Can't connect to storage server");
+                        break;
+                    }
+
+                    // send() to the storage server
+                     printf("c6");
+                    if (send(storage_fd, (struct sockaddr *)&server_addr, sizeof(server_addr), 0) < 0) {
+                        perror("Can't send to storage server");
+                        break;
+                    }
+
+                    // Receive the ack from the storage server
+                    AckPacket nmAck;
+                     printf("c7");
+                    if (recv(storage_fd, &nmAck, sizeof(AckPacket), 0) < 0) {
+                        perror("Error receiving ack from storage server");
+                        break;
+                    }
+
+                    // Forward the ACK packet to the client
+                     printf("c8");
+                    if (send(clientSocket, &nmAck, sizeof(AckPacket), 0) < 0) {
+                        perror("Error sending ACK");
+                        break;
+                    }   
+
+                    printf("Ack received from storage server : %d\n", ss_num);
+
                 }
 
             } else {
@@ -104,8 +145,7 @@ void* handleClientCommunication(void* arg) {
                 // (e.g., send an error acknowledgment to the client)
                 // Send SERVER_OFFLINE with FAILURE_ACK to the client
                 // The server is not online, send an error acknowledgment to the client
-                ackPacket cltAck;
-                printf("CASE 3\n");
+                AckPacket cltAck;
                 cltAck.ack = FAILURE_ACK;
                 cltAck.errorCode = SERVER_OFFLINE;
                 if (send(clientSocket, &cltAck, sizeof(cltAck), 0) < 0) {
@@ -121,7 +161,7 @@ void* handleClientCommunication(void* arg) {
             // Invalid ss_num, handle appropriately
             // (e.g., send an error acknowledgment to the client)
             // Send WRONG_PATH with FAILURE_ACK to the client
-            ackPacket cltAck;
+            AckPacket cltAck;
             cltAck.ack = FAILURE_ACK;
             cltAck.errorCode = WRONG_PATH;
             if (send(clientSocket, &cltAck, sizeof(cltAck), 0) < 0) {
@@ -223,11 +263,11 @@ void* listenServerRequests(void* arg) {
         if (servers[serverID].online) {
             // Server is already online, send FAILURE_ACK
             // With error code for server already registered
-            ackPacket failureAck;
+            AckPacket failureAck;
             failureAck.errorCode = SERVER_ALREADY_REGISTERED;
             failureAck.ack = FAILURE_ACK;
 
-            if (send(storageServerSocket, &failureAck, sizeof(ackPacket), 0) < 0) {
+            if (send(storageServerSocket, &failureAck, sizeof(AckPacket), 0) < 0) {
                 perror("Error sending failure acknowledgment to server");
             }
 
@@ -244,14 +284,16 @@ void* listenServerRequests(void* arg) {
                 printf("Clt Port: %d\n", servers[serverID].port_client);
 
                 servers[serverID].online = true;
+
+                server_fds[serverID] = storageServerSocket;
             sem_post(&num_servers_running_mutex);
 
             // Send SUCCESS_ACK to the server
-            ackPacket successAck;
+            AckPacket successAck;
             successAck.errorCode = SUCCESS;
             successAck.ack = SUCCESS_ACK;
 
-            if (send(storageServerSocket, &successAck, sizeof(ackPacket), 0) < 0) {
+            if (send(storageServerSocket, &successAck, sizeof(AckPacket), 0) < 0) {
                 perror("Error sending success acknowledgment to server");
             }
 

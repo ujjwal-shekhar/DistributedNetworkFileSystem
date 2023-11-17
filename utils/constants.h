@@ -38,12 +38,12 @@
 typedef enum {
     /* Priviledged */
     CREATE_DIR = 0,
+    CREATE_FILE,
     DELETE_DIR,
     DELETE_FILE,
 
     /* Non-priviledged */
     GET_FILE_INFO,
-    CREATE_FILE,
     READ_FILE,
     WRITE_FILE
 } RequestType;
