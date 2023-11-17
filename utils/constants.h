@@ -52,6 +52,8 @@ typedef enum {
     RUNTIME_ERROR,
     INVALID_INPUT_ERROR,
     SERVER_ALREADY_REGISTERED,
+    SERVER_OFFLINE,
+    WRONG_PATH,
     OTHER = 69
 } ErrorCode;
 

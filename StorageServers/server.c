@@ -41,17 +41,17 @@ void* nmThread(void* arg) {
         exit(EXIT_FAILURE);
     }
 
+    struct sockaddr_in nm_addr;
+    int nm_addr_len = sizeof(nm_addr);
+
+    // Accept a connection request
+    int nmSocket = accept(sock_fd, (struct sockaddr*) &nm_addr, &nm_addr_len);
+    if (nmSocket < 0) {
+        perror("Error accepting connection");
+        exit(EXIT_FAILURE);
+    }
+
     while (1) {
-        struct sockaddr_in nm_addr;
-        int nm_addr_len = sizeof(nm_addr);
-
-        // Accept a connection request
-        int nmSocket = accept(sock_fd, (struct sockaddr*) &nm_addr, &nm_addr_len);
-        if (nmSocket < 0) {
-            perror("Error accepting connection");
-            exit(EXIT_FAILURE);
-        }
-
         // Receive clientRequest
         ClientRequest clientRequest;
         if (recv(nmSocket, &clientRequest, sizeof(ClientRequest), 0) < 0) {

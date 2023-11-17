@@ -31,12 +31,45 @@ void* handleClientCommunication(void* arg) {
         // number of arguments.
         int ss_num = 0; /* Hardcoded for now */
 
+        // Find the server socket based on ss_num
+        int serverSocket = -1;
+
+        // Check if ss_num is within the valid range
+        if (ss_num >= 0 && ss_num < MAX_SERVERS) {
+            // Check if the server is online
+            if (servers[ss_num].online) {
+                
+            } else {
+                // The server is not online, handle appropriately
+                // (e.g., send an error acknowledgment to the client)
+                // Send SERVER_OFFLINE with FAILURE_ACK to the client
+                // The server is not online, send an error acknowledgment to the client
+            ackPacket failureAck;
+            failureAck.errorCode = SERVER_OFFLINE;
+            failureAck.ack = FAILURE_ACK;
+
+            if (send(nmSocket, &failureAck, sizeof(ackPacket), 0) < 0) {
+                perror("Error sending failure acknowledgment to client");
+            }
+
+            // Close the socket
+            close(nmSocket);
+
+            // Exit the loop
+            break;
+
+            }
+        } else {
+            // Invalid ss_num, handle appropriately
+            // (e.g., send an error acknowledgment to the client)
+            // Send WRONG_PATH with FAILURE_ACK to the client
+        }
+
         // Check if the Request_type is one in which 
         // we need to send the client details of the SS
         if (
             clientRequest.requestType == READ_FILE ||
             clientRequest.requestType == WRITE_FILE ||
-            clientRequest.requestType == DELETE_FILE ||
             clientRequest.requestType == GET_FILE_INFO
         ) {
             // Once you get the storage server details
@@ -49,6 +82,9 @@ void* handleClientCommunication(void* arg) {
             // server. The storage server will then
             // send the ACK bit back to us. We will
             // then send the ACK bit back to the client.
+            
+            // Send the clientRequest on the serverIP
+            // and port_nm
 
 
         }
