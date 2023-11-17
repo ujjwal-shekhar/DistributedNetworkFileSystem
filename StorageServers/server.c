@@ -2,6 +2,7 @@
 #include "../utils/headers.h"
 
 #define MY_SRV_IP "127.0.0.1"
+
 ServerDetails serverDetails;
 
 void* aliveThreadReply(void* arg) {
