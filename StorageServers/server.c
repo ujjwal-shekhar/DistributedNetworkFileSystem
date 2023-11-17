@@ -76,10 +76,59 @@ void* nmThread(void* arg) {
 }
 
 void* clientThread(void* arg) {
-    // Placeholder implementation for client thread
+    // Create a socket
+    int sock_fd = socket(SOCKET_FAMILY, SOCKET_TYPE, SOCKET_PROTOCOL);
+    printf("Started listening on port1 %d\n", serverDetails.port_client);
+
+    // Create a sockaddr_in struct for the server
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = SOCKET_FAMILY;
+    server_addr.sin_port = htons(serverDetails.port_client);
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+
+    printf("Started listening on port2 %d\n", serverDetails.port_client);
+    // Bind the socket to the port
+    if (bind(sock_fd, (struct sockaddr*) &server_addr, sizeof(server_addr)) < 0) {
+        perror("Error binding socket");
+        exit(EXIT_FAILURE);
+    }
+    printf("Started listening on port3 %d\n", serverDetails.port_client);
+
+    // Listen for incoming connections
+    if (listen(sock_fd, MAX_LISTEN_BACKLOG) < 0) {
+        perror("Error listening for connections");
+        exit(EXIT_FAILURE);
+    }
+
+    struct sockaddr_in clt_addr;
+    socklen_t clt_addr_len = sizeof(clt_addr);
+
+
     while (1) {
         // Wait for a connection request
-        // Process client requests
+        // Accept a connection request
+        int cltSocket = accept(sock_fd, (struct sockaddr*) &clt_addr, &clt_addr_len);
+        if (cltSocket < 0) {
+            perror("Error accepting connection");
+            exit(EXIT_FAILURE);
+        }
+
+        // Recv client request
+        ClientRequest clientRequest;
+        if (recv(cltSocket, &clientRequest, sizeof(ClientRequest), 0) < 0) {
+            perror("Error recv client request");
+            exit(EXIT_FAILURE);
+        }
+
+        // Print the response type
+        if (clientRequest.requestType == READ_FILE) {
+            printf("Read file: %s\n", clientRequest.arg1);
+        } else if (clientRequest.requestType == WRITE_FILE) {
+            printf("Write file: %s\n", clientRequest.arg1);
+        } else if (clientRequest.requestType == GET_FILE_INFO) {
+            printf("Get file info of : %s\n", clientRequest.arg1);
+        }
     }
     return NULL;
 }
@@ -142,6 +191,8 @@ int main(int argc, char *argv[]) {
         printf("Error: NM returned FAILURE_ACK\n");
         exit(EXIT_FAILURE);
     }
+
+    printf("NM returned\n");
 
     // Now, spawn an aliveThread. This thread 
     // receives a "CHECK" packet from

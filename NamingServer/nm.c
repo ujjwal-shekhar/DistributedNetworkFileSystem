@@ -36,14 +36,13 @@ void* handleClientCommunication(void* arg) {
             break;  // Exit the loop if there is an error
         }
 
+        printf("Client request received\n");
+
         // Search in the serverDetails to find
         // which storage server has the requested
         // path inside it. Do this for all num_args
         // number of arguments.
-        int ss_num = 0; /* Hardcoded for now */
-
-        // Find the server socket based on ss_num
-        int serverSocket = -1;
+        int ss_num = 0; /* Hardcoded for now */;
 
         // Check if ss_num is within the valid range
         if (ss_num >= 0 && ss_num < MAX_SERVERS) {
@@ -67,7 +66,15 @@ void* handleClientCommunication(void* arg) {
                         break;
                     }
 
-                    // Your job is done, continue to accept requests
+                    // Send the ServerDetails to the client
+                    if (send(clientSocket, &servers[ss_num], sizeof(servers[ss_num]), 0) < 0) {
+                        perror("Error sending client request");
+                        break;
+                    }
+
+                    // Your job is done, continue to accept new requests
+                    // Close other sockets
+                    // close(clientSocket);
                 } else {
                     // This will be different now, We will send 
                     // the clientRequest ourselves instead of 
@@ -86,8 +93,10 @@ void* handleClientCommunication(void* arg) {
                         break;
                     }
 
-                    // Send it over
-                    
+                    // Send it over to the server
+                    /* TBD TBD TBD */
+                    /* EZ do all of this on on another
+                     thread to get concurrent access : TBD */
                 }
 
             } else {
@@ -103,6 +112,9 @@ void* handleClientCommunication(void* arg) {
                     perror("Error sending client request");
                     break;
                 }
+
+                close(clientSocket);
+                continue;
             }
             
         } else {
@@ -116,6 +128,9 @@ void* handleClientCommunication(void* arg) {
                 perror("Error sending client request");
                 break;
             }
+
+            close(clientSocket);
+            continue;
         }
     }
 

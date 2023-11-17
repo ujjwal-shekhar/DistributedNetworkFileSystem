@@ -143,28 +143,53 @@ int main() {
             printf("Time to send requests to the server\n");
 
             // Receive the server details from NM
+            ServerDetails server;
+            if (recv(sock_fd, &server, sizeof(server), 0) < 0) {
+                printf("Error receiving server details from server\n");
+                exit(-1);
+            }
+
+            // Print the server details
+            printf("\nServer ID: %d\n", server.serverID);
+            printf("Server port_nm: %d\n", server.port_nm);
+            printf("Server port_client: %d\n", server.port_client);
+            printf("Server online: %d\n", server.online);
+
+            // Create new socket
+            int clt_srv_fd = socket(SOCKET_FAMILY, SOCKET_TYPE, SOCKET_PROTOCOL);
+            if (sock_fd < 0) {
+                printf("Error creating socket\n");
+                exit(-1);
+            }
+
+            // Create a sockaddr_in struct for the server
+            struct sockaddr_in storage_server_addr;
+            memset(&storage_server_addr, 0, sizeof(storage_server_addr));
+            storage_server_addr.sin_family = SOCKET_FAMILY;
+            storage_server_addr.sin_port = htons(server.port_client);
+            storage_server_addr.sin_addr.s_addr = inet_addr(server.serverIP);
 
             // connect() to the server on given IP and port
+            // Connect to the server
+            if (connect(clt_srv_fd, (struct sockaddr*) &storage_server_addr, sizeof(storage_server_addr)) < 0) {
+                printf("Error connecting to server\n");
+                exit(-1);
+            }
+
+            printf("Connecting to server\n");
 
             // send() the request
+            if (send(clt_srv_fd, &clientRequest, sizeof(clientRequest), 0) < 0) {
+                printf("Error sending client request to storage server\n");
+                exit(-1);
+            }
 
             // Wait for the ack
-
+            if (recv(clt_srv_fd, &clientRequest, sizeof(clientRequest), 0) < 0) {
+                printf("Error receiving ack from storage server\n");
+                exit(-1);
+            }
         }
-
-        // // Check if the ack is a success
-        // if (ack.ack == SUCCESS_ACK) {
-        //     printf("Request successful\n");
-        // } else if (ack.ack == FAILURE_ACK) {
-        //     printf("Request failed\n");
-        // } else if (ack.ack == INIT_ACK) {
-        //     printf("Request initiated by NM\n");
-        // } else if (ack.ack == STOP_ACK) {
-        //     printf("Request failed, server asked to STOP\n");
-        //     break;
-        // } else if (ack.ack == CNNCT_TO_SRV_ACK) {
-        //     printf("Expect server details\n");
-        // }
     }
 
     // Close the socket

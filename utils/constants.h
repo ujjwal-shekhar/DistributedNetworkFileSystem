@@ -36,13 +36,16 @@
 
 // Enum for Request type
 typedef enum {
+    /* Priviledged */
     CREATE_DIR = 0,
+    DELETE_DIR,
+    DELETE_FILE,
+
+    /* Non-priviledged */
+    GET_FILE_INFO,
     CREATE_FILE,
     READ_FILE,
-    WRITE_FILE,
-    DELETE_FILE,
-    DELETE_DIR,
-    GET_FILE_INFO
+    WRITE_FILE
 } RequestType;
 
 // Enum for error codes
