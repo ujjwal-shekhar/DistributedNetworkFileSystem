@@ -124,15 +124,16 @@ void* listenServerRequests(void* arg) {
         close(serverSocket);
         exit(EXIT_FAILURE);
     }
-
+    
     // Start queuing everything that is listened to 
     if (listen(serverSocket, MAX_LISTEN_BACKLOG) < 0) {
         perror("Error listening for connections");
-        close(serverSocket);
+        close(serverSocket); 
         exit(EXIT_FAILURE);
     }
 
-    printf("\x1b[32mNaming Server is listening for SERVER connections...\x1b[0m\n");
+    // Log that the client listener has started to listen
+    LOG("Naming Server is listening for SERVER connections", true);
 
     while (1) {
         // Make the socket address struct 
@@ -204,7 +205,8 @@ void* listenClientRequests(void* arg) {
         exit(EXIT_FAILURE);
     }
 
-    printf("\x1b[32mNaming Server is listening for CLIENT connections...\x1b[0m\n");
+    // Log that the client listener has started to listen
+    LOG("Naming Server is listening for CLIENT connections", true);
 
     // Accept incoming connections and spawn a thread for each
     while (1) {
@@ -262,6 +264,9 @@ int main() {
     sem_init(&servers_initialized, 0, 0);
     sem_init(&num_servers_running_mutex, 0, 1);
 
+    // Log that the NM file is running
+    LOG("NM file is running", true);
+
     // I will first spawn a thread to listen 
     // for incoming storage server requests
     pthread_t listenServerThreadId;
@@ -270,8 +275,14 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
+    // Log that the Server listener was spawned
+    LOG("Server listener started", true);
+
     // Wait for the servers to be initialized
     sem_wait(&servers_initialized);
+
+    // Log that the Client listener was spawned
+    LOG("Client listener started", true);
 
     // Spawn a thread to forever listen for new
     // client requests.

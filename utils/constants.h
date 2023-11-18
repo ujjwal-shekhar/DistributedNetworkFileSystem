@@ -73,6 +73,7 @@ typedef enum {
 // LOGGING = 0 to store in server logs
 // LOGGING = 1 to print on stdout and store in server logs
 #define LOGGING 1
+#define NM_LOG_FILE "./naming_server.log"
 
 // NM IP address
 #define NM_IP "127.0.0.1"

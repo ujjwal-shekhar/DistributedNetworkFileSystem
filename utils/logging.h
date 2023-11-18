@@ -4,14 +4,30 @@
 
 #include <stdio.h>
 
-#ifdef LOGGING
+// Check if logging is enabled
 #if LOGGING == 1
-#define LOG(message) printf("LOG: %s\n", message)
+
+// Define log function for enabled logging
+#define LOG(message, plus) do { \
+    FILE *fptr = fopen(NM_LOG_FILE, "a"); \
+    if (fptr) { \
+        fprintf(fptr, "[%s]: %s\n", ((plus) ? ("+") : ("-")), message); \
+        fclose(fptr); \
+    } \
+    printf("[%s\e[0m]: %s\n", ((plus) ? ("\e[0;32m+") : ("\e[0;31m-")), message); \
+} while (0)
+
 #else
-#define LOG(message)
-#endif
-#else
-#define LOG(message)
+
+// Define log function for disabled logging
+#define LOG(message, plus) do { \
+    FILE *fptr = fopen(NM_LOG_FILE, "a"); \
+    if (fptr) { \
+        fprintf(fptr, "[%s]: %s\n", ((plus) ? ("+") : ("-")), message); \
+        fclose(fptr); \
+    } \
+} while (0)
+
 #endif
 
 #endif // LOGGING_H
