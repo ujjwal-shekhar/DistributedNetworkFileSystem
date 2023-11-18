@@ -1,6 +1,5 @@
 // nm.c
-# include "../utils/headers.h"
-# include "nm.h"
+#include "nm.h"
 
 int client_fds[MAX_CLIENTS];                    // Make a list of client fds
 int server_fds[MAX_SERVERS];                    // Make a list of server fds
@@ -12,44 +11,74 @@ sem_t servers_initialized;                      // Semaphore to wait for MIN_SER
 int num_servers_running = 0;                    // Keep track of the number of servers running
 sem_t num_servers_running_mutex;                // Binary semaphore to lock the critical section    
 
-// // Function to handle client communication in a separate thread
-// void* handleClientCommunication(void* arg) {
-//     int clientSocket = *((int*)arg);
+/**
+ * @brief Handles communication with a client in a separate thread.
+ * 
+ * This function runs in a separate thread to handle communication with a client.
+ * It receives client requests, identifies the appropriate storage server,
+ * and delegates the request handling to the `handleClientRequest` function.
+ * The client socket is used to communicate with the Network Manager (NM).
+ * 
+ * @param arg : Pointer to an integer representing the client socket.
+ *              The client socket is extracted from this pointer and used for communication.
+ *              After completion, the client socket is closed, and the thread slot is marked as available.
+ * 
+ * @note The function runs in an infinite loop until an error occurs during client request reception.
+ * 
+ */
+void* handleClientCommunication(void* arg) {
+    // Extract the client socket from this 
+    // We will use this exact socket to talk
+    // to the NM
+    int clientSocket = *((int*)arg);
 
-//     while (1) {
-//         // Add your logic to handle communication with the client
-//         // For example, you can receive requests, process them, and send acknowledgments
-//         // Receive a struct Client Request
-//         ClientRequest clientRequest;
-//         if (recv(clientSocket, &clientRequest, sizeof(clientRequest), 0) < 0) {
-//             perror("Error receiving client request");
-//             break;  // Exit the loop if there is an error
-//         }
+    LOG("Client communication started", true);
 
-//         // Print the Request details
-//         printf("Argument 1: %s\n", clientRequest.arg1);
+    while (1) {
+        // Populate a ClientRequest struct by receiving
+        // in it from the client.
+        ClientRequest clientRequest;
+        if (recv(clientSocket, &clientRequest, sizeof(clientRequest), 0) < 0) {
+            LOG("Error receiving client request", false);
+            break;  // Exit the loop if there is an error
+        }
 
-//         // Send a success acknowledgment to the client
-//         ackPacket successAck;
-//         successAck.errorCode = SUCCESS;
-//         successAck.ack = SUCCESS_ACK;
+        LOG("Received Client Request", true);
 
-//         if (send(clientSocket, &successAck, sizeof(ackPacket), 0) < 0) {
-//             perror("Error sending success acknowledgment to client");
-//             break;  // Exit the loop if there is an error
-//         }
-//     }
-//     printf("Exiting thread...\n");
+        // Search in the serverDetails to find
+        // which storage server has the requested
+        // path inside it. Do this for all num_args
+        // number of arguments.
+        int ss_num = findStorageServer(clientRequest.arg1, servers);
 
-//     // Close the client socket when communication is done
-//     close(clientSocket);
+        if (!handleClientRequest(&clientSocket, &clientRequest, ss_num, servers)) {
+            LOG("Failed to process client request", false);
+        }
+    }
 
-//     // Mark the slot as availablez
-//     *((int*)arg) = -1;
+    // Close the client socket when communication is done
+    close(clientSocket);
 
-//     pthread_exit(NULL);
-// }
+    // Mark the slot as available
+    *((int*)arg) = -1;
 
+    pthread_exit(NULL);
+}
+
+/**
+ * @brief Performs server-alive checks in a separate thread.
+ * 
+ * This function is intended to run in a separate thread and perform
+ * server-alive checks. It sends a "CHECK" packet to the server, receives
+ * a "CHECK" packet along with the serverID, and repeats the process every
+ * 10 seconds. The thread execution can be terminated by the server.
+ * 
+ * @param arg : Unused parameter, required by the pthread_create function.
+ * 
+ * @note The function runs in an infinite loop with a sleep of 10 seconds between iterations.
+ * 
+ * @return Always returns NULL.
+ */
 void* aliveThreadAsk(void* arg) {
     // Placeholder implementation for aliveThread
     while (1) {
@@ -62,121 +91,98 @@ void* aliveThreadAsk(void* arg) {
     return NULL;
 }
 
+/**
+ * @brief Listens to incoming storage server requests and handles server registration.
+ * 
+ * This function initializes server details, creates and configures the server socket, and enters
+ * an infinite loop to listen for incoming connections. Upon accepting a connection, it receives
+ * server details and registers the new server using the `registerNewServer` function.
+ * After processing, it closes the server socket.
+ * 
+ * @param arg : Unused parameter (required for pthread_create).
+ * 
+ * @note The function runs indefinitely, listening for incoming storage server requests.
+ * 
+ */ 
 void* listenServerRequests(void* arg) {
-    // Placeholder implementation for listening to storage server requests
-    // This thread will initialize servers and post to servers_initialized semaphore
-    // whenever a new server is initialized
+    initializeServerDetails(servers);
 
-    // Initialize the client fds to -1
-    for (int i = 0; i < MAX_SERVERS; i++) {
-        servers[i].serverID = -1;
-        servers[i].online = false;
-    }
-
-    // Create and configure the server socket
+    // Make a socket fd for the Naming Server
     int serverSocket = socket(SOCKET_FAMILY, SOCKET_TYPE, SOCKET_PROTOCOL);
     if (serverSocket < 0) {
-        perror("Error creating socket");
+        LOG("Error creating socket", false);
         exit(EXIT_FAILURE);
     }
-
-    // Configure server address
+    
+    // Initialize the port details 
+    // that we need to bind the listener (us) on
     struct sockaddr_in serverAddr;
     memset(&serverAddr, 0, sizeof(serverAddr));
     serverAddr.sin_family = SOCKET_FAMILY;
-    serverAddr.sin_port = htons(NM_NEW_SRV_PORT); // Use the appropriate port for the naming server
+    serverAddr.sin_port = htons(NM_NEW_SRV_PORT);
     serverAddr.sin_addr.s_addr = INADDR_ANY;
 
-    // Bind the socket to the address
+    // Bind the socket fd to the port 
     if (bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
-        perror("Error binding socket");
+        LOG("Error binding socket", false);
         close(serverSocket);
         exit(EXIT_FAILURE);
     }
-
-    // Listen for incoming connections
+    LOG("Naming Server is bound on the NM_NEW_SRV_PORT", true);
+    
+    // Start queuing everything that is listened to 
     if (listen(serverSocket, MAX_LISTEN_BACKLOG) < 0) {
-        perror("Error listening for connections");
-        close(serverSocket);
+        LOG("Error listening for connections", false);
+        close(serverSocket); 
         exit(EXIT_FAILURE);
     }
 
-    printf("\x1b[32mNaming Server is listening for SERVER connections...\x1b[0m\n");
+    // Log that the client listener has started to listen
+    LOG("Naming Server is listening for SERVER connections", true);
 
     while (1) {
-    printf("Servers listener is woken up\n");
+        // Make the socket address struct 
+        // Mostly obsolete since we don't need
+        // to bind this to anyone
         struct sockaddr_in clientAddr;
         socklen_t clientLen = sizeof(clientAddr);
 
-        // Accept a new connection
-        int storageServerSocket = accept(serverSocket, (struct sockaddr*)&clientAddr, &clientLen);
-
-        if (storageServerSocket < 0) {
-            perror("Error accepting server connection");
-            close(storageServerSocket);
-            continue;
+        // Send the pointer to the storage server address 
+        // structure to get accepted
+        int storageServerSocket;
+        if (!acceptNewConnection(&storageServerSocket, &serverSocket, &clientAddr, &clientLen)) {
+            continue; // Failed to connect
         }
+        LOG("Connection established with storage server", true);
 
-        // Receive server details
+        // ServerDetails struct to be populated by 
+        // receiving from the server.
         ServerDetails receivedServerDetails;
-        if (recv(storageServerSocket, &receivedServerDetails, sizeof(ServerDetails), 0) < 0) {
-            perror("Error receiving server details");
+        if (!receiveServerDetails(&storageServerSocket, &receivedServerDetails)) {
+            close(storageServerSocket); // Since we failed to receive, close the socket
+            continue; // Failed to receive server details
+        }
+        LOG("Received server details", true);
+        printf("ONLINE : %d : %s\n", receivedServerDetails.serverID, ((receivedServerDetails.online) ? "YES" : "NO"));
+
+        if (!registerNewServer(
+            servers,
+            &num_servers_running_mutex,
+            &servers_initialized,
+            &storageServerSocket,
+            server_fds,
+            &num_servers_running,
+            aliveThreadAsk,
+            &receivedServerDetails  // Pass receivedServerDetails to the function
+        )) {
+            // Failed to register
             close(storageServerSocket);
             continue;
         }
 
-        // Search for the server in the servers list
-        int serverID = receivedServerDetails.serverID;
-
-        printf("Received server ID: %d\n", serverID);
-
-        if (servers[serverID].online) {
-            // Server is already online, send FAILURE_ACK
-            // With error code for server already registered
-            ackPacket failureAck;
-            failureAck.errorCode = SERVER_ALREADY_REGISTERED;
-            failureAck.ack = FAILURE_ACK;
-
-            if (send(storageServerSocket, &failureAck, sizeof(ackPacket), 0) < 0) {
-                perror("Error sending failure acknowledgment to server");
-            }
-
-            close(storageServerSocket);
-        } else {
-            // Server is not online, register it
-            servers[serverID] = receivedServerDetails;
-
-            // Send SUCCESS_ACK to the server
-            ackPacket successAck;
-            successAck.errorCode = SUCCESS;
-            successAck.ack = SUCCESS_ACK;
-
-            if (send(storageServerSocket, &successAck, sizeof(ackPacket), 0) < 0) {
-                perror("Error sending success acknowledgment to server");
-            }
-
-            // Post to servers_initialized semaphore
-            sem_wait(&num_servers_running_mutex);
-                num_servers_running++;
-            sem_post(&num_servers_running_mutex);
-
-            if (num_servers_running == NUM_INIT_SERVERS) {
-                sem_post(&servers_initialized);
-            }
-
-            // Spawn an alive thread
-            pthread_t aliveThreadId;
-            if (pthread_create(&aliveThreadId, NULL, aliveThreadAsk, NULL) != 0) {
-                perror("Error creating aliveThread");
-            }
-
-            // Detach the thread to avoid memory leaks
-            pthread_detach(aliveThreadId);
-        }
     }
 
-    // Close the server socket (this won't be reached in this simple example)
-    close(serverSocket);
+    closeServerSocket(&serverSocket);
 
     return NULL;
 }
@@ -189,14 +195,16 @@ void* listenClientRequests(void* arg) {
         client_fds[i] = -1;
     }
 
-    printf("Clients listener is woken up\n");
+    LOG("Initialized client fds", true);
 
     // Create and configure the server socket
     int serverSocket = socket(SOCKET_FAMILY, SOCKET_TYPE, SOCKET_PROTOCOL);
     if (serverSocket < 0) {
-        perror("Error creating socket");
+        LOG("Error creating socket", false);
         exit(EXIT_FAILURE);
     }
+
+    LOG("Created Naming server socket for client new clients", true);
 
     // Configure server address
     struct sockaddr_in serverAddr;
@@ -207,19 +215,22 @@ void* listenClientRequests(void* arg) {
 
     // Bind the socket to the address
     if (bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
-        perror("Error binding socket");
+        LOG("Error binding socket", false);
         close(serverSocket);
         exit(EXIT_FAILURE);
     }
+
+    LOG("Bound Naming server socket on NM_CLT_PORT", true);
 
     // Listen for incoming connections
     if (listen(serverSocket, MAX_LISTEN_BACKLOG) < 0) {
-        perror("Error listening for connections");
+        LOG("Error listening for connections", false);
         close(serverSocket);
         exit(EXIT_FAILURE);
     }
 
-    printf("\x1b[32mNaming Server is listening for CLIENT connections...\x1b[0m\n");
+    // Log that the client listener has started to listen
+    LOG("Naming Server is listening for CLIENT connections", true);
 
     // Accept incoming connections and spawn a thread for each
     while (1) {
@@ -236,21 +247,25 @@ void* listenClientRequests(void* arg) {
         }
 
         if (clientIndex == -1) {
-            // All slots are in use, handle appropriately (e.g., reject the connection)
+            LOG("Available slot not found in client_fds", false);
             continue;
+        } else {
+            LOG("Available slot found in client_fds", true);
         }
 
         // Accept a new connection
         client_fds[clientIndex] = accept(serverSocket, (struct sockaddr*)&clientAddr, &clientLen);
 
         if (client_fds[clientIndex] < 0) {
-            perror("Error accepting client connection");
+            LOG("Error accepting client connection", false);
             continue;
+        } else {
+            LOG("Accepted connection from server", true);
         }
 
         // Spawn a new thread to handle client communication
         if (pthread_create(&clientThreads[clientIndex], NULL, handleClientCommunication, (void*)&client_fds[clientIndex]) != 0) {
-            perror("Error creating client communication thread");
+            LOG("Error creating client communication thread", false);
             close(client_fds[clientIndex]);
             // Mark the slot as available
             client_fds[clientIndex] = -1;
@@ -268,7 +283,7 @@ void* listenClientRequests(void* arg) {
 }
 
 int main() {
-    // Now, a semaphore will be initialized to 
+    // A semaphore will be initialized to 
     // minus(NUM_INIT_SERVERS). Every time 
     // a server is initialized in the listen server
     // connection requests, we will post here
@@ -276,6 +291,9 @@ int main() {
     // continue
     sem_init(&servers_initialized, 0, 0);
     sem_init(&num_servers_running_mutex, 0, 1);
+
+    // Log that the NM file is running
+    LOG("NM file is running", true);
 
     // I will first spawn a thread to listen 
     // for incoming storage server requests
@@ -285,8 +303,14 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
+    // Log that the Server listener was spawned
+    LOG("Server listener started", true);
+
     // Wait for the servers to be initialized
     sem_wait(&servers_initialized);
+
+    // Log that the Client listener was spawned
+    LOG("Client listener started", true);
 
     // Spawn a thread to forever listen for new
     // client requests.

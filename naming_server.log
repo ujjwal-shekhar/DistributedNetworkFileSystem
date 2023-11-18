@@ -1,0 +1,444 @@
+[+]: NM file is running
+[+]: Server listener started
+[+]: Naming Server is bound on the NM_NEW_SRV_PORT
+[+]: Naming Server is listening for SERVER connections
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Server online: [0;31moffline[0m
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Server online: [0;31moffline[0m
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Server online: [0;31moffline[0m
+[+]: Sent ACK packet to storage server
+[+]: All initial servers are running
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Server online: [0;31moffline[0m
+[+]: Client listener started
+[+]: Initialized client fds
+[+]: Created Naming server socket for client new clients
+[+]: Bound Naming server socket on NM_CLT_PORT
+[+]: Naming Server is listening for CLIENT connections
+[+]: Available slot found in client_fds
+[+]: Accepted connection from server
+[+]: Available slot found in client_fds
+[+]: Client communication started
+[+]: Accepted connection from server
+[+]: Available slot found in client_fds
+[+]: Client communication started
+[+]: Received Client Request
+[[0;32m+[0m]: Client ID: -1, Request Type: 5, Num Args: 1, Arg1: lmai.txt
+, Arg2: 
+[+]: Request Type : NON-PRIVILEDGED
+[+]: Sending a connection acknowledgement
+[+]: Connection acknowledgement succeeded
+[+]: Server Details sent to client
+[+]: Forwarding PRIVILEDGED request to storage server successful
+[+]: Received Client Request
+[[0;32m+[0m]: Client ID: -1, Request Type: 5, Num Args: 1, Arg1: lmat.txt
+, Arg2: 
+[+]: Request Type : NON-PRIVILEDGED
+[+]: Sending a connection acknowledgement
+[+]: Connection acknowledgement succeeded
+[+]: Server Details sent to client
+[+]: Forwarding PRIVILEDGED request to storage server successful
+[+]: Received Client Request
+[[0;32m+[0m]: Client ID: -1, Request Type: 5, Num Args: 1, Arg1: lmalma.txt
+, Arg2: 
+[+]: Request Type : NON-PRIVILEDGED
+[+]: Sending a connection acknowledgement
+[+]: Connection acknowledgement succeeded
+[+]: Server Details sent to client
+[+]: Forwarding PRIVILEDGED request to storage server successful
+[+]: Received Client Request
+[[0;32m+[0m]: Client ID: -1, Request Type: 1, Num Args: 1, Arg1: lalalala.txt
+, Arg2: 
+[+]: Request Type : PRIVILEDGED
+[+]: Sending a connection acknowledgement
+[+]: Storage server socket for NM connection successfully established
+[+]: NM connected to storage server
+[+]: Sent ClientRequest to storage server successfully
+[+]: Received acknowledgement from storage server
+[+]: Forwarded acknowledgement from storage server to client
+[+]: Forwarding PRIVILEDGED request to storage server successful
+[-]: Error receiving client request
+[-]: Error receiving client request
+[+]: NM file is running
+[+]: Server listener started
+[+]: Naming Server is bound on the NM_NEW_SRV_PORT
+[+]: Naming Server is listening for SERVER connections
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Server online: [0;31moffline[0m
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Server online: [0;31moffline[0m
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Server online: [0;31moffline[0m
+[+]: Sent ACK packet to storage server
+[+]: All initial servers are running
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Server online: [0;31moffline[0m
+[+]: Client listener started
+[+]: Initialized client fds
+[+]: Created Naming server socket for client new clients
+[+]: Bound Naming server socket on NM_CLT_PORT
+[+]: Naming Server is listening for CLIENT connections
+[+]: Available slot found in client_fds
+[+]: Accepted connection from server
+[+]: Available slot found in client_fds
+[+]: Client communication started
+[+]: Accepted connection from server
+[+]: Available slot found in client_fds
+[+]: Client communication started
+[+]: Received Client Request
+[[0;32m+[0m]: Client ID: -1, Request Type: 1, Num Args: 1, Arg1: lmailmai
+, Arg2: 
+[+]: Request Type : PRIVILEDGED
+[+]: Sending a connection acknowledgement
+[+]: Storage server socket for NM connection successfully established
+[+]: NM connected to storage server
+[+]: Sent ClientRequest to storage server successfully
+[+]: Received acknowledgement from storage server
+[+]: Forwarded acknowledgement from storage server to client
+[+]: Forwarding PRIVILEDGED request to storage server successful
+[+]: Received Client Request
+[[0;32m+[0m]: Client ID: -1, Request Type: 1, Num Args: 1, Arg1: lmaslma
+, Arg2: 
+[+]: Request Type : PRIVILEDGED
+[+]: Sending a connection acknowledgement
+[+]: Storage server socket for NM connection successfully established
+[+]: Can't connect to storage server
+[-]: Can't send clientRequest to storage server
+[-]: Couldn't forward request to storage server
+[-]: Failed to process client request
+[+]: NM file is running
+[+]: Server listener started
+[+]: Naming Server is bound on the NM_NEW_SRV_PORT
+[+]: Naming Server is listening for SERVER connections
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Server online: [0;31moffline[0m
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Server online: [0;31moffline[0m
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Server online: [0;31moffline[0m
+[+]: Sent ACK packet to storage server
+[+]: All initial servers are running
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Server online: [0;31moffline[0m
+[+]: Client listener started
+[+]: Initialized client fds
+[+]: Created Naming server socket for client new clients
+[+]: Bound Naming server socket on NM_CLT_PORT
+[+]: Naming Server is listening for CLIENT connections
+[+]: Available slot found in client_fds
+[+]: Accepted connection from server
+[+]: Available slot found in client_fds
+[+]: Client communication started
+[+]: Received Client Request
+[[0;32m+[0m]: Client ID: -1, Request Type: 5, Num Args: 1, Arg1: lmalma
+, Arg2: 
+[+]: Request Type : NON-PRIVILEDGED
+[+]: Sending a connection acknowledgement
+[+]: Connection acknowledgement succeeded
+[+]: Server Details sent to client
+[+]: Forwarding NON-PRIVILEDGED request to client successful
+[+]: Received Client Request
+[[0;32m+[0m]: Client ID: -1, Request Type: 5, Num Args: 1, Arg1: lmua
+, Arg2: 
+[+]: Request Type : NON-PRIVILEDGED
+[+]: Sending a connection acknowledgement
+[+]: Connection acknowledgement succeeded
+[+]: Server Details sent to client
+[+]: Forwarding NON-PRIVILEDGED request to client successful
+[+]: NM file is running
+[+]: Server listener started
+[+]: Naming Server is bound on the NM_NEW_SRV_PORT
+[+]: Naming Server is listening for SERVER connections
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Server online: [0;31moffline[0m
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Server online: [0;31moffline[0m
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Server online: [0;31moffline[0m
+[+]: Sent ACK packet to storage server
+[+]: All initial servers are running
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Server online: [0;31moffline[0m
+[+]: Client listener started
+[+]: Initialized client fds
+[+]: Created Naming server socket for client new clients
+[+]: Bound Naming server socket on NM_CLT_PORT
+[+]: Naming Server is listening for CLIENT connections
+[+]: Available slot found in client_fds
+[+]: Accepted connection from server
+[+]: Available slot found in client_fds
+[+]: Client communication started
+[+]: Received Client Request
+[[0;32m+[0m]: Client ID: -1, Request Type: 5, Num Args: 1, Arg1: lmau
+, Arg2: 
+[+]: Request Type : NON-PRIVILEDGED
+[+]: Sending a connection acknowledgement
+[+]: Connection acknowledgement succeeded
+[+]: Server Details sent to client
+[+]: Forwarding NON-PRIVILEDGED request to client successful
+[+]: Received Client Request
+[[0;32m+[0m]: Client ID: -1, Request Type: 5, Num Args: 1, Arg1: lmai
+, Arg2: 
+[+]: Request Type : NON-PRIVILEDGED
+[+]: Sending a connection acknowledgement
+[+]: Connection acknowledgement succeeded
+[+]: Server Details sent to client
+[+]: Forwarding NON-PRIVILEDGED request to client successful
+[-]: Error receiving client request
+[+]: NM file is running
+[+]: Server listener started
+[+]: Naming Server is bound on the NM_NEW_SRV_PORT
+[+]: Naming Server is listening for SERVER connections
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Server online: [0;31moffline[0m
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Server online: [0;31moffline[0m
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Server online: [0;31moffline[0m
+[+]: Sent ACK packet to storage server
+[+]: All initial servers are running
+[+]: Server registered
+[+]: Client listener started
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Server online: [0;31moffline[0m
+[+]: Initialized client fds
+[+]: Created Naming server socket for client new clients
+[+]: Bound Naming server socket on NM_CLT_PORT
+[+]: Naming Server is listening for CLIENT connections
+[+]: Available slot found in client_fds
+[+]: Accepted connection from server
+[+]: Available slot found in client_fds
+[+]: Client communication started
+[+]: Received Client Request
+[[0;32m+[0m]: Client ID: -1, Request Type: 5, Num Args: 1, Arg1: lmai
+, Arg2: 
+[+]: Request Type : NON-PRIVILEDGED
+[+]: Sending a connection acknowledgement
+[+]: Connection acknowledgement succeeded
+[+]: Server Details sent to client
+[+]: Forwarding NON-PRIVILEDGED request to client successful
+[+]: Received Client Request
+[[0;32m+[0m]: Client ID: -1, Request Type: 5, Num Args: 1, Arg1: lmamlam
+, Arg2: 
+[+]: Request Type : NON-PRIVILEDGED
+[+]: Sending a connection acknowledgement
+[+]: Connection acknowledgement succeeded
+[+]: Server Details sent to client
+[+]: Forwarding NON-PRIVILEDGED request to client successful
+[-]: Error receiving client request
+[+]: NM file is running
+[+]: Server listener started
+[+]: Naming Server is bound on the NM_NEW_SRV_PORT
+[+]: Naming Server is listening for SERVER connections
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Server online: [0;31moffline[0m
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Server online: [0;31moffline[0m
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Server online: [0;31moffline[0m
+[+]: Sent ACK packet to storage server
+[+]: All initial servers are running
+[+]: Server registered
+[+]: Client listener started
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Server online: [0;31moffline[0m
+[+]: Initialized client fds
+[+]: Created Naming server socket for client new clients
+[+]: Bound Naming server socket on NM_CLT_PORT
+[+]: Naming Server is listening for CLIENT connections
+[+]: Available slot found in client_fds
+[+]: Accepted connection from server
+[+]: Available slot found in client_fds
+[+]: Client communication started
+[+]: Received Client Request
+[[0;32m+[0m]: Client ID: -1, Request Type: 5, Num Args: 1, Arg1: lmalmalma
+, Arg2: 
+[+]: Request Type : NON-PRIVILEDGED
+[+]: Sending a connection acknowledgement
+[+]: Connection acknowledgement succeeded
+[+]: Server Details sent to client
+[+]: Forwarding NON-PRIVILEDGED request to client successful
+[+]: Received Client Request
+[[0;32m+[0m]: Client ID: -1, Request Type: 5, Num Args: 1, Arg1: ulalalala
+, Arg2: 
+[+]: Request Type : NON-PRIVILEDGED
+[+]: Sending a connection acknowledgement
+[+]: Connection acknowledgement succeeded
+[+]: Server Details sent to client
+[+]: Forwarding NON-PRIVILEDGED request to client successful
+[-]: Error receiving client request
+[+]: NM file is running
+[+]: Server listener started
+[+]: Naming Server is bound on the NM_NEW_SRV_PORT
+[+]: Naming Server is listening for SERVER connections
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Server online: [0;31moffline[0m
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Server online: [0;31moffline[0m
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Server online: [0;31moffline[0m
+[+]: Sent ACK packet to storage server
+[+]: All initial servers are running
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Server online: [0;31moffline[0m
+[+]: Client listener started
+[+]: Initialized client fds
+[+]: Created Naming server socket for client new clients
+[+]: Bound Naming server socket on NM_CLT_PORT
+[+]: Naming Server is listening for CLIENT connections
+[+]: Available slot found in client_fds
+[+]: Accepted connection from server
+[+]: Available slot found in client_fds
+[+]: Client communication started
+[+]: Received Client Request
+[[0;32m+[0m]: Client ID: -1, Request Type: 5, Num Args: 1, Arg1: lmalmalmalma
+, Arg2: 
+[+]: Request Type : NON-PRIVILEDGED
+[+]: Sending a connection acknowledgement
+[+]: Connection acknowledgement succeeded
+[+]: Server Details sent to client
+[+]: Forwarding NON-PRIVILEDGED request to client successful
+[+]: Received Client Request
+[[0;32m+[0m]: Client ID: -1, Request Type: 5, Num Args: 1, Arg1: lfmadklfmasd
+, Arg2: 
+[+]: Request Type : NON-PRIVILEDGED
+[+]: Sending a connection acknowledgement
+[+]: Connection acknowledgement succeeded
+[+]: Server Details sent to client
+[+]: Forwarding NON-PRIVILEDGED request to client successful
+[-]: Error receiving client request
+[+]: NM file is running
+[+]: Server listener started
+[+]: Naming Server is bound on the NM_NEW_SRV_PORT
+[+]: Naming Server is listening for SERVER connections
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Server online: [0;31moffline[0m
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Server online: [0;31moffline[0m
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Server online: [0;31moffline[0m
+[+]: Sent ACK packet to storage server
+[+]: All initial servers are running
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Server online: [0;31moffline[0m
+[+]: Client listener started
+[+]: Initialized client fds
+[+]: Created Naming server socket for client new clients
+[+]: Bound Naming server socket on NM_CLT_PORT
+[+]: Naming Server is listening for CLIENT connections
+[+]: Available slot found in client_fds
+[+]: Accepted connection from server
+[+]: Available slot found in client_fds
+[+]: Client communication started
+[+]: Received Client Request
+[[0;32m+[0m]: Client ID: -1, Request Type: 5, Num Args: 1, Arg1: lmailmai'
+, Arg2: 
+[+]: Request Type : NON-PRIVILEDGED
+[+]: Sending a connection acknowledgement
+[+]: Connection acknowledgement succeeded
+[+]: Server Details sent to client
+[+]: Forwarding NON-PRIVILEDGED request to client successful
+[-]: Error receiving client request
+[+]: NM file is running
+[+]: Server listener started
+[+]: Naming Server is bound on the NM_NEW_SRV_PORT
+[+]: Naming Server is listening for SERVER connections
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Server online: [0;31moffline[0m
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Server online: [0;31moffline[0m
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Server online: [0;31moffline[0m
+[+]: Sent ACK packet to storage server
+[+]: All initial servers are running
+[+]: Server registered
+[+]: Client listener started
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Server online: [0;31moffline[0m
+[+]: Initialized client fds
+[+]: Created Naming server socket for client new clients
+[+]: Bound Naming server socket on NM_CLT_PORT
+[+]: Naming Server is listening for CLIENT connections
+[+]: Available slot found in client_fds
+[+]: Accepted connection from server
+[+]: Available slot found in client_fds
+[+]: Client communication started
+[+]: Received Client Request
+[[0;32m+[0m]: Client ID: -1, Request Type: 5, Num Args: 1, Arg1: lmalma
+, Arg2: 
+[+]: Request Type : NON-PRIVILEDGED
+[+]: Sending a connection acknowledgement
+[+]: Connection acknowledgement succeeded
+[+]: Server Details sent to client
+[+]: Forwarding NON-PRIVILEDGED request to client successful
+[+]: Received Client Request
+[[0;32m+[0m]: Client ID: -1, Request Type: 5, Num Args: 1, Arg1: lmalmalmalamlma
+, Arg2: 
+[+]: Request Type : NON-PRIVILEDGED
+[+]: Sending a connection acknowledgement
+[+]: Connection acknowledgement succeeded
+[+]: Server Details sent to client
+[+]: Forwarding NON-PRIVILEDGED request to client successful
+[-]: Error receiving client request

@@ -2,8 +2,8 @@
 #include "../utils/headers.h"
 
 #define MY_SRV_IP "127.0.0.1"
-#define MY_SRV_NM_PORT 6060
-#define MY_SRV_CLT_PORT 7070
+
+ServerDetails serverDetails;
 
 void* aliveThreadReply(void* arg) {
     // Placeholder implementation for aliveThread
@@ -18,36 +18,150 @@ void* aliveThreadReply(void* arg) {
 }
 
 void* nmThread(void* arg) {
-    // Placeholder implementation for NM thread
+    // Create a socket
+    int sock_fd = socket(SOCKET_FAMILY, SOCKET_TYPE, SOCKET_PROTOCOL);
+
+    // Create a sockaddr_in struct for the server
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = SOCKET_FAMILY;
+    server_addr.sin_port = htons(serverDetails.port_nm);
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+
+
+    // Bind the socket to the port
+    if (bind(sock_fd, (struct sockaddr*) &server_addr, sizeof(server_addr)) < 0) {
+        perror("Error binding socket");
+        exit(EXIT_FAILURE);
+    }
+
+    // Listen for incoming connections
+    if (listen(sock_fd, MAX_LISTEN_BACKLOG) < 0) {
+        perror("Error listening for connections");
+        exit(EXIT_FAILURE);
+    }
+
+    struct sockaddr_in nm_addr;
+    socklen_t nm_addr_len = sizeof(nm_addr);
+
+    // Accept a connection request
+    int nmSocket = accept(sock_fd, (struct sockaddr*) &nm_addr, &nm_addr_len);
+    if (nmSocket < 0) {
+        perror("Error accepting connection");
+        exit(EXIT_FAILURE);
+    }
+
     while (1) {
-        // Receive NM requests here
-        // Process the queries
+        // Receive clientRequest
+        ClientRequest clientRequest;
+        if (recv(nmSocket, &clientRequest, sizeof(ClientRequest), 0) < 0) {
+            perror("Error receiving client request");
+            exit(EXIT_FAILURE);
+        }
+
+        // Process clientRequest
+        if (clientRequest.requestType == CREATE_DIR) {
+            printf("Creating directory\n");
+        } else if (clientRequest.requestType == CREATE_FILE) {
+            printf("Creating file\n");
+        } else if (clientRequest.requestType == DELETE_DIR) {
+            printf("Delete directory\n");
+        } else if (clientRequest.requestType == DELETE_FILE) {
+            printf("Delete file\n");
+        }
+
+        // Send SUCCESS ACK to NM
+        AckPacket nmAck;
+        nmAck.errorCode = SUCCESS;
+        nmAck.ack = SUCCESS_ACK;
+        if (send(nmSocket, &nmAck, sizeof(AckPacket), 0) < 0) {
+            perror("Error sending ack packet to NM");
+            exit(EXIT_FAILURE);
+        }
     }
     return NULL;
 }
 
 void* clientThread(void* arg) {
-    // Placeholder implementation for client thread
+    // Create a socket
+    int sock_fd = socket(SOCKET_FAMILY, SOCKET_TYPE, SOCKET_PROTOCOL);
+
+    // Create a sockaddr_in struct for the server
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = SOCKET_FAMILY;
+    server_addr.sin_port = htons(serverDetails.port_client);
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+
+    // Bind the socket to the port
+    if (bind(sock_fd, (struct sockaddr*) &server_addr, sizeof(server_addr)) < 0) {
+        perror("Error binding socket");
+        exit(EXIT_FAILURE);
+    }
+
+    // Listen for incoming connections
+    if (listen(sock_fd, MAX_LISTEN_BACKLOG) < 0) {
+        perror("Error listening for connections");
+        exit(EXIT_FAILURE);
+    }
+
+    struct sockaddr_in clt_addr;
+    socklen_t clt_addr_len = sizeof(clt_addr);
+
+
     while (1) {
         // Wait for a connection request
-        // Process client requests
+        // Accept a connection request
+        int cltSocket = accept(sock_fd, (struct sockaddr*) &clt_addr, &clt_addr_len);
+        if (cltSocket < 0) {
+            perror("Error accepting connection");
+            exit(EXIT_FAILURE);
+        }
+
+        // Recv client request
+        ClientRequest clientRequest;
+        if (recv(cltSocket, &clientRequest, sizeof(ClientRequest), 0) < 0) {
+            perror("Error recv client request");
+            exit(EXIT_FAILURE);
+        }
+
+        // Print the response type
+        if (clientRequest.requestType == READ_FILE) {
+            printf("Read file: %s\n", clientRequest.arg1);
+        } else if (clientRequest.requestType == WRITE_FILE) {
+            printf("Write file: %s\n", clientRequest.arg1);
+        } else if (clientRequest.requestType == GET_FILE_INFO) {
+            printf("Get file info of : %s\n", clientRequest.arg1);
+        }
+
+        // Send the ack bit to client
+        AckPacket ack;
+        ack.errorCode = SUCCESS;
+        ack.ack = SUCCESS_ACK;
+        if (send(cltSocket, &ack, sizeof(ack), 0) < 0) {
+            printf("Error sending ack to client\n");
+            exit(-1);
+        }
+
+        close(cltSocket);
     }
     return NULL;
 }
 
 int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s <serverID>\n", argv[0]);
+    if (argc != 4) {
+        fprintf(stderr, "Usage: %s <serverID> <CLT_PORT> <NM_PORT>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 
     // Make a ServerDetails with the given serverID
-    ServerDetails serverDetails;
     serverDetails.serverID = atoi(argv[1]);
     strcpy(serverDetails.serverIP, MY_SRV_IP); // Replace with your actual IP
-    serverDetails.port_nm = MY_SRV_NM_PORT;
-    serverDetails.port_client = MY_SRV_CLT_PORT;
-    serverDetails.online = false;
+    serverDetails.port_client = atoi(argv[2]);
+    serverDetails.port_nm = atoi(argv[3]);
+    serverDetails.online = true;
+
+    printf("ONLINE : %s\n", ((serverDetails.online) ? "YES" : "NO"));
 
     // Create a socket
     int sock_fd = socket(SOCKET_FAMILY, SOCKET_TYPE, SOCKET_PROTOCOL);
@@ -70,7 +184,9 @@ int main(int argc, char *argv[]) {
     }
 
     // Add accessible paths later
-    /* TBD */
+    /* TBD
+        @Anika-Roy will be handling this
+     */
 
     // Send the server details to the NM
     if (send(sock_fd, &serverDetails, sizeof(ServerDetails), 0) < 0) {
@@ -81,10 +197,10 @@ int main(int argc, char *argv[]) {
     // The NM sends back an ack packet
     // Get the server ID assigned by NM to you
     // Store this server ID here
-    ackPacket nmAck;
+    AckPacket nmAck;
     
     // Receive the ack packet
-    if (recv(sock_fd, &nmAck, sizeof(ackPacket), 0) < 0) {
+    if (recv(sock_fd, &nmAck, sizeof(AckPacket), 0) < 0) {
         perror("Error receiving ack packet");
         exit(EXIT_FAILURE);
     }
