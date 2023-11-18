@@ -17,8 +17,9 @@
  * @param num_servers_running : Pointer to the number of running servers.
  * @param receivedServerDetails : Details of the new storage server.
  * 
+ * @return true if successful, false otherwise
  */ 
-void registerNewServer(
+bool registerNewServer(
     ServerDetails* servers,
     sem_t* num_servers_running_mutex,
     sem_t* servers_initialized,
@@ -31,30 +32,34 @@ void registerNewServer(
     // Extract server ID from received details
     int serverID = receivedServerDetails->serverID;
 
+    LOG("Registering server", true);
+    LOG_SERVER_DETAILS(receivedServerDetails);
+
     // Check if the server is already online
     if (servers[serverID].online) {
         AckPacket ack;
         ack.errorCode = SERVER_ALREADY_REGISTERED;
         ack.ack = FAILURE_ACK;
         sendAckToClient(storageServerSocket, &ack);
-        close(*storageServerSocket);
+        LOG("Server was already registered", false);
+        return false;
     } else { 
         // Register the new server
         sem_wait(num_servers_running_mutex);
             servers[serverID] = *receivedServerDetails;
-
-            printServerInfo(servers[serverID]);
-
             servers[serverID].online = true;
             server_fds[serverID] = *storageServerSocket;
-
         sem_post(num_servers_running_mutex);
 
         // Send SUCCESS_ACK to the server
         AckPacket ack;
         ack.errorCode = SUCCESS;
         ack.ack = SUCCESS_ACK;
-        sendAckToClient(storageServerSocket, &ack);
+        if (!sendAckToClient(storageServerSocket, &ack)) {
+            return false;
+        }
+
+        LOG("Sent ACK packet to storage server", true);
 
         // Increment the number of running servers
         sem_wait(num_servers_running_mutex);
@@ -63,12 +68,17 @@ void registerNewServer(
 
         // If all initial servers are running, post to the servers_initialized semaphore
         if (*num_servers_running == NUM_INIT_SERVERS) {
+            LOG("All initial servers are running", true);
             sem_post(servers_initialized);
         }
+        
+        LOG("Server registered", true);
+        LOG_SERVER_DETAILS(receivedServerDetails);
 
         // Spawn an alive thread
         spawnAliveThread(aliveThreadAsk);
     }
+    return true;
 }
 
 /**
@@ -149,13 +159,13 @@ void createAndConfigureServerSocket(int *serverSocket) {
  * @return The socket descriptor for the new connection.
  * 
  */ 
-int acceptNewConnection(int* storageServerSocket, int* serverSocket, struct sockaddr_in* clientAddr, socklen_t* clientLen) {
+bool acceptNewConnection(int* storageServerSocket, int* serverSocket, struct sockaddr_in* clientAddr, socklen_t* clientLen) {
     *storageServerSocket = accept(*serverSocket, (struct sockaddr*)clientAddr, clientLen);
     if (storageServerSocket < 0) {
-        perror("Error accepting server connection");
-        close(*storageServerSocket);
+        LOG("Error accepting server connection", false);
+        return false;
     }
-    return *storageServerSocket;
+    return true;
 }
 
 /**
@@ -167,12 +177,15 @@ int acceptNewConnection(int* storageServerSocket, int* serverSocket, struct sock
  * @param storageServerSocket : The socket from which to receive server details.
  * @param receivedServerDetails : Pointer to a ServerDetails struct to store received details.
  * 
+ * @return true if server details were received, else false
  */ 
-void receiveServerDetails(int* storageServerSocket, ServerDetails* receivedServerDetails) {
+bool receiveServerDetails(int* storageServerSocket, ServerDetails* receivedServerDetails) {
     if (recv(*storageServerSocket, receivedServerDetails, sizeof(ServerDetails), 0) < 0) {
-        perror("Error receiving server details");
-        close(*storageServerSocket);
+        LOG("Error receiving server details", false);
+        return false;
     }
+    LOG("Received server details", true);
+    return true;
 }
 
 /**

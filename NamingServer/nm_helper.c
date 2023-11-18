@@ -17,11 +17,15 @@ void printServerInfo(ServerDetails server) {
  * 
  * @param clientSocket : Client socket file descriptor.
  * @param ack : Pointer to AckPacket struct containing acknowledgment details.
+ * 
+ * @return false on error, true on success
  */
-void sendAckToClient(int* clientSocket, AckPacket* ack) {
+bool sendAckToClient(int* clientSocket, AckPacket* ack) {
     if (send(*clientSocket, ack, sizeof(AckPacket), 0) < 0) {
-        perror("Error sending ACK to client");
+        LOG("Error sending ACK to client", false);
+        return false;
     }
+    return true;
 }
 
 /**
@@ -161,7 +165,7 @@ int connectToStorageServer(int ss_num, ServerDetails* servers) {
  * @param servers : Pointer to an array of ServerDetails structs containing server details.
  */
 void handleClientRequest(int* clientSocket, ClientRequest* clientRequest, int ss_num, ServerDetails* servers) {
-    printf("Handling client request\n");
+    // LOG("")
     // Check if ss_num is within the valid range
     if (ss_num >= 0 && ss_num < MAX_SERVERS) {
         // Check if the server is online

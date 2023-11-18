@@ -8,7 +8,7 @@
 void printServerInfo(ServerDetails server);
 
 // Function to send an acknowledgment packet to the client
-void sendAckToClient(int* clientSocket, AckPacket *ack);
+bool sendAckToClient(int* clientSocket, AckPacket *ack);
 
 // Function to send server details to the client
 void sendServerDetailsToClient(int* clientSocket, ServerDetails *serverDetails);
@@ -32,7 +32,7 @@ int connectToStorageServer(int ss_num, ServerDetails *servers);
 void handleClientRequest(int* clientSocket, ClientRequest *clientRequest, int ss_num, ServerDetails *servers);
 
 // Function to register a new server
-void registerNewServer(
+bool registerNewServer(
     ServerDetails* servers,
     sem_t* num_servers_running_mutex,
     sem_t* servers_intialised,
@@ -53,10 +53,10 @@ void initializeServerDetails(ServerDetails* servers);
 void createAndConfigureServerSocket(int *serverSocket);
 
 // Function to accept a new connection
-int acceptNewConnection(int* storageServerSocket, int* serverSocket, struct sockaddr_in* clientAddr, socklen_t* clientLen);
+bool acceptNewConnection(int* storageServerSocket, int* serverSocket, struct sockaddr_in* clientAddr, socklen_t* clientLen);
 
 // Function to receive server details
-void receiveServerDetails(int* storageServerSocket, ServerDetails* receivedServerDetails);
+bool receiveServerDetails(int* storageServerSocket, ServerDetails* receivedServerDetails);
 
 // Function to spawn alivee check thread
 void spawnAliveThread(void* aliveThreadAsk);

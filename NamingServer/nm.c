@@ -32,15 +32,18 @@ void* handleClientCommunication(void* arg) {
     // to the NM
     int clientSocket = *((int*)arg);
 
+    LOG("Client communication started", true);
+
     while (1) {
         // Populate a ClientRequest struct by receiving
         // in it from the client.
         ClientRequest clientRequest;
         if (recv(clientSocket, &clientRequest, sizeof(clientRequest), 0) < 0) {
-            perror("Error receiving client request");
+            LOG("Error receiving client request", false);
             break;  // Exit the loop if there is an error
         }
 
+        LOG("Received Client Request", true);
         // Search in the serverDetails to find
         // which storage server has the requested
         // path inside it. Do this for all num_args
@@ -106,7 +109,7 @@ void* listenServerRequests(void* arg) {
     // Make a socket fd for the Naming Server
     int serverSocket = socket(SOCKET_FAMILY, SOCKET_TYPE, SOCKET_PROTOCOL);
     if (serverSocket < 0) {
-        perror("Error creating socket");
+        LOG("Error creating socket", false);
         exit(EXIT_FAILURE);
     }
     
@@ -120,14 +123,15 @@ void* listenServerRequests(void* arg) {
 
     // Bind the socket fd to the port 
     if (bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
-        perror("Error binding socket");
+        LOG("Error binding socket", false);
         close(serverSocket);
         exit(EXIT_FAILURE);
     }
+    LOG("Naming Server is bound on the NM_NEW_SRV_PORT", true);
     
     // Start queuing everything that is listened to 
     if (listen(serverSocket, MAX_LISTEN_BACKLOG) < 0) {
-        perror("Error listening for connections");
+        LOG("Error listening for connections", false);
         close(serverSocket); 
         exit(EXIT_FAILURE);
     }
@@ -145,14 +149,19 @@ void* listenServerRequests(void* arg) {
         // Send the pointer to the storage server address 
         // structure to get accepted
         int storageServerSocket;
-        acceptNewConnection(&storageServerSocket, &serverSocket, &clientAddr, &clientLen);
+        if (!acceptNewConnection(&storageServerSocket, &serverSocket, &clientAddr, &clientLen)) {
+            continue; // Failed to connect
+        }
 
         // ServerDetails struct to be populated by 
         // receiving from the server.
         ServerDetails receivedServerDetails;
-        receiveServerDetails(&storageServerSocket, &receivedServerDetails);
+        if (!receiveServerDetails(&storageServerSocket, &receivedServerDetails)) {
+            close(storageServerSocket); // Since we failed to receive, close the socket
+            continue; // Failed to receive server details
+        }
 
-        registerNewServer(
+        if (!registerNewServer(
             servers,
             &num_servers_running_mutex,
             &servers_initialized,
@@ -161,7 +170,12 @@ void* listenServerRequests(void* arg) {
             &num_servers_running,
             aliveThreadAsk,
             &receivedServerDetails  // Pass receivedServerDetails to the function
-        );
+        )) {
+            // Failed to register
+            close(storageServerSocket);
+            continue;
+        }
+
     }
 
     closeServerSocket(&serverSocket);
@@ -177,12 +191,16 @@ void* listenClientRequests(void* arg) {
         client_fds[i] = -1;
     }
 
+    LOG("Initialized client fds", true);
+
     // Create and configure the server socket
     int serverSocket = socket(SOCKET_FAMILY, SOCKET_TYPE, SOCKET_PROTOCOL);
     if (serverSocket < 0) {
-        perror("Error creating socket");
+        LOG("Error creating socket", false);
         exit(EXIT_FAILURE);
     }
+
+    LOG("Created Naming server socket for client new clients", true);
 
     // Configure server address
     struct sockaddr_in serverAddr;
@@ -193,14 +211,16 @@ void* listenClientRequests(void* arg) {
 
     // Bind the socket to the address
     if (bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
-        perror("Error binding socket");
+        LOG("Error binding socket", false);
         close(serverSocket);
         exit(EXIT_FAILURE);
     }
 
+    LOG("Bound Naming server socket on NM_CLT_PORT", true);
+
     // Listen for incoming connections
     if (listen(serverSocket, MAX_LISTEN_BACKLOG) < 0) {
-        perror("Error listening for connections");
+        LOG("Error listening for connections", false);
         close(serverSocket);
         exit(EXIT_FAILURE);
     }
@@ -223,21 +243,25 @@ void* listenClientRequests(void* arg) {
         }
 
         if (clientIndex == -1) {
-            // All slots are in use, handle appropriately (e.g., reject the connection)
+            LOG("Available slot not found in client_fds", false);
             continue;
+        } else {
+            LOG("Available slot found in client_fds", true);
         }
 
         // Accept a new connection
         client_fds[clientIndex] = accept(serverSocket, (struct sockaddr*)&clientAddr, &clientLen);
 
         if (client_fds[clientIndex] < 0) {
-            perror("Error accepting client connection");
+            LOG("Error accepting client connection", false);
             continue;
+        } else {
+            LOG("Accepted connection from server", true);
         }
 
         // Spawn a new thread to handle client communication
         if (pthread_create(&clientThreads[clientIndex], NULL, handleClientCommunication, (void*)&client_fds[clientIndex]) != 0) {
-            perror("Error creating client communication thread");
+            LOG("Error creating client communication thread", false);
             close(client_fds[clientIndex]);
             // Mark the slot as available
             client_fds[clientIndex] = -1;
