@@ -34,6 +34,6 @@ void* handleClientCommunication(void* arg) {
 
     // Mark the slot as availablez
     *((int*)arg) = -1;
-
+ 
     pthread_exit(NULL);
 }
