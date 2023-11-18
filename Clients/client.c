@@ -72,9 +72,6 @@ int main() {
         exit(-1);
     }
 
-    // Initialize client ID
-    int clientID = -1;
-
     while (true) {
         // We will ask the user to input their request
         char request[MAX_REQUEST_SIZE + 1];
@@ -192,7 +189,7 @@ int main() {
             }
 
             // Wait for the ack
-            if (recv(sock_fd, &ack, sizeof(ack), 0) < 0) {
+            if (recv(clt_srv_fd, &ack, sizeof(ack), 0) < 0) {
                 printf("Error receiving ack from storage server\n");
                 exit(-1);
             }

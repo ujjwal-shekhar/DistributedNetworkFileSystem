@@ -53,7 +53,7 @@ void initializeServerDetails(ServerDetails* servers);
 void createAndConfigureServerSocket(int *serverSocket);
 
 // Function to accept a new connection
-int acceptNewConnection(int* serverSocket, struct sockaddr_in* clientAddr, socklen_t* clientLen);
+int acceptNewConnection(int* storageServerSocket, int* serverSocket, struct sockaddr_in* clientAddr, socklen_t* clientLen);
 
 // Function to receive server details
 void receiveServerDetails(int* storageServerSocket, ServerDetails* receivedServerDetails);

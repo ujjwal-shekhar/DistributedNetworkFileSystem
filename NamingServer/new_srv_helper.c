@@ -149,13 +149,13 @@ void createAndConfigureServerSocket(int *serverSocket) {
  * @return The socket descriptor for the new connection.
  * 
  */ 
-int acceptNewConnection(int* serverSocket, struct sockaddr_in* clientAddr, socklen_t* clientLen) {
-    int storageServerSocket = accept(*serverSocket, (struct sockaddr*)clientAddr, clientLen);
+int acceptNewConnection(int* storageServerSocket, int* serverSocket, struct sockaddr_in* clientAddr, socklen_t* clientLen) {
+    *storageServerSocket = accept(*serverSocket, (struct sockaddr*)clientAddr, clientLen);
     if (storageServerSocket < 0) {
         perror("Error accepting server connection");
-        close(storageServerSocket);
+        close(*storageServerSocket);
     }
-    return storageServerSocket;
+    return *storageServerSocket;
 }
 
 /**

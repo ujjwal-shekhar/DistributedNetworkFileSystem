@@ -103,15 +103,51 @@ void* aliveThreadAsk(void* arg) {
 void* listenServerRequests(void* arg) {
     initializeServerDetails(servers);
 
-    int serverSocket;
-    createAndConfigureServerSocket(&serverSocket);
+    // Make a socket fd for the Naming Server
+    int serverSocket = socket(SOCKET_FAMILY, SOCKET_TYPE, SOCKET_PROTOCOL);
+    if (serverSocket < 0) {
+        perror("Error creating socket");
+        exit(EXIT_FAILURE);
+    }
+    
+    // Initialize the port details 
+    // that we need to bind the listener (us) on
+    struct sockaddr_in serverAddr;
+    memset(&serverAddr, 0, sizeof(serverAddr));
+    serverAddr.sin_family = SOCKET_FAMILY;
+    serverAddr.sin_port = htons(NM_NEW_SRV_PORT);
+    serverAddr.sin_addr.s_addr = INADDR_ANY;
+
+    // Bind the socket fd to the port 
+    if (bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
+        perror("Error binding socket");
+        close(serverSocket);
+        exit(EXIT_FAILURE);
+    }
+
+    // Start queuing everything that is listened to 
+    if (listen(serverSocket, MAX_LISTEN_BACKLOG) < 0) {
+        perror("Error listening for connections");
+        close(serverSocket);
+        exit(EXIT_FAILURE);
+    }
+
+    printf("\x1b[32mNaming Server is listening for SERVER connections...\x1b[0m\n");
 
     while (1) {
+        // Make the socket address struct 
+        // Mostly obsolete since we don't need
+        // to bind this to anyone
         struct sockaddr_in clientAddr;
         socklen_t clientLen = sizeof(clientAddr);
 
-        int storageServerSocket = acceptNewConnection(&serverSocket, &clientAddr, &clientLen);
+        // Send the pointer to the storage server address 
+        // structure to get accepted
+        int storageServerSocket;
+        acceptNewConnection(&storageServerSocket, &serverSocket, &clientAddr, &clientLen);
 
+        // ServerDetails struct to be populated by 
+        // receiving from the server.
         ServerDetails receivedServerDetails;
         receiveServerDetails(&storageServerSocket, &receivedServerDetails);
 

@@ -46,7 +46,7 @@ void handleServerOffline(int* clientSocket) {
     AckPacket cltAck;
     cltAck.ack = FAILURE_ACK;
     cltAck.errorCode = SERVER_OFFLINE;
-    sendAckToClient(*clientSocket, &cltAck);
+    sendAckToClient(clientSocket, &cltAck);
     close(*clientSocket);
 }
 
@@ -60,7 +60,7 @@ void handleWrongPath(int* clientSocket) {
     AckPacket cltAck;
     cltAck.ack = FAILURE_ACK;
     cltAck.errorCode = WRONG_PATH;
-    sendAckToClient(*clientSocket, &cltAck);
+    sendAckToClient(clientSocket, &cltAck);
     close(*clientSocket);
 }
 
@@ -72,10 +72,11 @@ void handleWrongPath(int* clientSocket) {
  * @param errorCode : Error code indicating the status of the operation.
  */
 void sendConnectionAcknowledgment(int* clientSocket, AckBit ackType, ErrorCode errorCode) {
+    printf("Sending a connection acknowledgement\n");
     AckPacket cltAck;
     cltAck.ack = ackType;
     cltAck.errorCode = errorCode;
-    sendAckToClient(*clientSocket, &cltAck);
+    sendAckToClient(clientSocket, &cltAck);
 }
 
 /**
@@ -112,7 +113,7 @@ void forwardClientRequestToServer(int* clientSocket, ClientRequest* clientReques
     }
 
     // Forward the acknowledgment to the client
-    sendAckToClient(*clientSocket, &nmAck);
+    sendAckToClient(clientSocket, &nmAck);
 
     printf("Acknowledgment received from storage server: %d\n", ss_num);
 
@@ -160,6 +161,7 @@ int connectToStorageServer(int ss_num, ServerDetails* servers) {
  * @param servers : Pointer to an array of ServerDetails structs containing server details.
  */
 void handleClientRequest(int* clientSocket, ClientRequest* clientRequest, int ss_num, ServerDetails* servers) {
+    printf("Handling client request\n");
     // Check if ss_num is within the valid range
     if (ss_num >= 0 && ss_num < MAX_SERVERS) {
         // Check if the server is online
