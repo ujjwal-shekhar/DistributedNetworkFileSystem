@@ -47,7 +47,7 @@ void* handleClientCommunication(void* arg) {
         // number of arguments.
         int ss_num = 0; /* Hardcoded for now */;
 
-        handleClientRequest(clientSocket, &clientRequest, ss_num, servers);
+        handleClientRequest(&clientSocket, &clientRequest, ss_num, servers);
     }
 
     // Close the client socket when communication is done
@@ -110,16 +110,16 @@ void* listenServerRequests(void* arg) {
         struct sockaddr_in clientAddr;
         socklen_t clientLen = sizeof(clientAddr);
 
-        int storageServerSocket = acceptNewConnection(serverSocket, &clientAddr, &clientLen);
+        int storageServerSocket = acceptNewConnection(&serverSocket, &clientAddr, &clientLen);
 
         ServerDetails receivedServerDetails;
-        receiveServerDetails(storageServerSocket, &receivedServerDetails);
+        receiveServerDetails(&storageServerSocket, &receivedServerDetails);
 
         registerNewServer(
             servers,
             &num_servers_running_mutex,
             &servers_initialized,
-            storageServerSocket,
+            &storageServerSocket,
             server_fds,
             &num_servers_running,
             aliveThreadAsk,
@@ -127,7 +127,7 @@ void* listenServerRequests(void* arg) {
         );
     }
 
-    closeServerSocket(serverSocket);
+    closeServerSocket(&serverSocket);
 
     return NULL;
 }
@@ -217,7 +217,7 @@ void* listenClientRequests(void* arg) {
 }
 
 int main() {
-    // Now, a semaphore will be initialized to 
+    // A semaphore will be initialized to 
     // minus(NUM_INIT_SERVERS). Every time 
     // a server is initialized in the listen server
     // connection requests, we will post here

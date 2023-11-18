@@ -18,8 +18,8 @@ void printServerInfo(ServerDetails server) {
  * @param clientSocket : Client socket file descriptor.
  * @param ack : Pointer to AckPacket struct containing acknowledgment details.
  */
-void sendAckToClient(int clientSocket, AckPacket* ack) {
-    if (send(clientSocket, ack, sizeof(AckPacket), 0) < 0) {
+void sendAckToClient(int* clientSocket, AckPacket* ack) {
+    if (send(*clientSocket, ack, sizeof(AckPacket), 0) < 0) {
         perror("Error sending ACK to client");
     }
 }
@@ -30,8 +30,8 @@ void sendAckToClient(int clientSocket, AckPacket* ack) {
  * @param clientSocket : Client socket file descriptor.
  * @param serverDetails : Pointer to ServerDetails struct containing server details.
  */
-void sendServerDetailsToClient(int clientSocket, ServerDetails* serverDetails) {
-    if (send(clientSocket, serverDetails, sizeof(ServerDetails), 0) < 0) {
+void sendServerDetailsToClient(int* clientSocket, ServerDetails* serverDetails) {
+    if (send(*clientSocket, serverDetails, sizeof(ServerDetails), 0) < 0) {
         perror("Error sending server details to client");
     }
 }
@@ -41,13 +41,13 @@ void sendServerDetailsToClient(int clientSocket, ServerDetails* serverDetails) {
  * 
  * @param clientSocket : Client socket file descriptor.
  */
-void handleServerOffline(int clientSocket) {
+void handleServerOffline(int* clientSocket) {
     // The server is not online, send an error acknowledgment to the client
     AckPacket cltAck;
     cltAck.ack = FAILURE_ACK;
     cltAck.errorCode = SERVER_OFFLINE;
-    sendAckToClient(clientSocket, &cltAck);
-    close(clientSocket);
+    sendAckToClient(*clientSocket, &cltAck);
+    close(*clientSocket);
 }
 
 /**
@@ -55,13 +55,13 @@ void handleServerOffline(int clientSocket) {
  * 
  * @param clientSocket : Client socket file descriptor.
  */
-void handleWrongPath(int clientSocket) {
+void handleWrongPath(int* clientSocket) {
     // Invalid ss_num, send an error acknowledgment to the client
     AckPacket cltAck;
     cltAck.ack = FAILURE_ACK;
     cltAck.errorCode = WRONG_PATH;
-    sendAckToClient(clientSocket, &cltAck);
-    close(clientSocket);
+    sendAckToClient(*clientSocket, &cltAck);
+    close(*clientSocket);
 }
 
 /**
@@ -71,11 +71,11 @@ void handleWrongPath(int clientSocket) {
  * @param ackType : Type of acknowledgment.
  * @param errorCode : Error code indicating the status of the operation.
  */
-void sendConnectionAcknowledgment(int clientSocket, AckBit ackType, ErrorCode errorCode) {
+void sendConnectionAcknowledgment(int* clientSocket, AckBit ackType, ErrorCode errorCode) {
     AckPacket cltAck;
     cltAck.ack = ackType;
     cltAck.errorCode = errorCode;
-    sendAckToClient(clientSocket, &cltAck);
+    sendAckToClient(*clientSocket, &cltAck);
 }
 
 /**
@@ -86,18 +86,18 @@ void sendConnectionAcknowledgment(int clientSocket, AckBit ackType, ErrorCode er
  * @param ss_num : Storage server number.
  * @param servers : Pointer to an array of ServerDetails structs containing server details.
  */
-void forwardClientRequestToServer(int clientSocket, ClientRequest* clientRequest, int ss_num, ServerDetails* servers) {
+void forwardClientRequestToServer(int* clientSocket, ClientRequest* clientRequest, int ss_num, ServerDetails* servers) {
     // Connect to the storage server
     int storage_fd = connectToStorageServer(ss_num, servers);
     if (storage_fd < 0) {
-        close(clientSocket);
+        close(*clientSocket);
         return;
     }
 
     // Send the clientRequest to the storage server
     if (send(storage_fd, clientRequest, sizeof(ClientRequest), 0) < 0) {
         perror("Can't send clientRequest to storage server");
-        close(clientSocket);
+        close(*clientSocket);
         close(storage_fd);
         return;
     }
@@ -106,13 +106,13 @@ void forwardClientRequestToServer(int clientSocket, ClientRequest* clientRequest
     AckPacket nmAck;
     if (recv(storage_fd, &nmAck, sizeof(AckPacket), 0) < 0) {
         perror("Error receiving acknowledgment from storage server");
-        close(clientSocket);
+        close(*clientSocket);
         close(storage_fd);
         return;
     }
 
     // Forward the acknowledgment to the client
-    sendAckToClient(clientSocket, &nmAck);
+    sendAckToClient(*clientSocket, &nmAck);
 
     printf("Acknowledgment received from storage server: %d\n", ss_num);
 
@@ -159,7 +159,7 @@ int connectToStorageServer(int ss_num, ServerDetails* servers) {
  * @param ss_num : Storage server number.
  * @param servers : Pointer to an array of ServerDetails structs containing server details.
  */
-void handleClientRequest(int clientSocket, ClientRequest* clientRequest, int ss_num, ServerDetails* servers) {
+void handleClientRequest(int* clientSocket, ClientRequest* clientRequest, int ss_num, ServerDetails* servers) {
     // Check if ss_num is within the valid range
     if (ss_num >= 0 && ss_num < MAX_SERVERS) {
         // Check if the server is online

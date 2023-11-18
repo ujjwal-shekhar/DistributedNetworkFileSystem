@@ -22,11 +22,11 @@ void registerNewServer(
     ServerDetails* servers,
     sem_t* num_servers_running_mutex,
     sem_t* servers_initialized,
-    int storageServerSocket,
+    int* storageServerSocket,
     int* server_fds,
     int* num_servers_running,
     void * aliveThreadAsk,
-    ServerDetails* receivedServerDetails  // Added parameter
+    ServerDetails* receivedServerDetails
 ) {
     // Extract server ID from received details
     int serverID = receivedServerDetails->serverID;
@@ -37,8 +37,8 @@ void registerNewServer(
         ack.errorCode = SERVER_ALREADY_REGISTERED;
         ack.ack = FAILURE_ACK;
         sendAckToClient(storageServerSocket, &ack);
-        close(storageServerSocket);
-    } else {
+        close(*storageServerSocket);
+    } else { 
         // Register the new server
         sem_wait(num_servers_running_mutex);
             servers[serverID] = *receivedServerDetails;
@@ -46,7 +46,7 @@ void registerNewServer(
             printServerInfo(servers[serverID]);
 
             servers[serverID].online = true;
-            server_fds[serverID] = storageServerSocket;
+            server_fds[serverID] = *storageServerSocket;
 
         sem_post(num_servers_running_mutex);
 
@@ -79,9 +79,9 @@ void registerNewServer(
  * @param serverSocket : The server socket to be closed.
  * 
  */ 
-void closeServerSocket(int serverSocket) {
+void closeServerSocket(int* serverSocket) {
     // Close the server socket (this won't be reached in this simple example)
-    close(serverSocket);
+    close(*serverSocket);
 }
 
 /**
@@ -149,8 +149,8 @@ void createAndConfigureServerSocket(int *serverSocket) {
  * @return The socket descriptor for the new connection.
  * 
  */ 
-int acceptNewConnection(int serverSocket, struct sockaddr_in* clientAddr, socklen_t* clientLen) {
-    int storageServerSocket = accept(serverSocket, (struct sockaddr*)clientAddr, clientLen);
+int acceptNewConnection(int* serverSocket, struct sockaddr_in* clientAddr, socklen_t* clientLen) {
+    int storageServerSocket = accept(*serverSocket, (struct sockaddr*)clientAddr, clientLen);
     if (storageServerSocket < 0) {
         perror("Error accepting server connection");
         close(storageServerSocket);
@@ -168,10 +168,10 @@ int acceptNewConnection(int serverSocket, struct sockaddr_in* clientAddr, sockle
  * @param receivedServerDetails : Pointer to a ServerDetails struct to store received details.
  * 
  */ 
-void receiveServerDetails(int storageServerSocket, ServerDetails* receivedServerDetails) {
-    if (recv(storageServerSocket, receivedServerDetails, sizeof(ServerDetails), 0) < 0) {
+void receiveServerDetails(int* storageServerSocket, ServerDetails* receivedServerDetails) {
+    if (recv(*storageServerSocket, receivedServerDetails, sizeof(ServerDetails), 0) < 0) {
         perror("Error receiving server details");
-        close(storageServerSocket);
+        close(*storageServerSocket);
     }
 }
 
