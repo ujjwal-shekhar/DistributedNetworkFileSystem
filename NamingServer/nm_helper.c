@@ -37,6 +37,7 @@ bool sendAckToClient(int* clientSocket, AckPacket* ack) {
  * @return true if server details was sent, false otherwise.
  */
 bool sendServerDetailsToClient(int* clientSocket, ServerDetails* serverDetails) {
+    printf("%d is the client socket\n", *clientSocket);
     if (send(*clientSocket, serverDetails, sizeof(ServerDetails), 0) < 0) {
         LOG("Error sending server details to client", false);
         return false;
@@ -207,7 +208,7 @@ bool handleClientRequest(int* clientSocket, ClientRequest* clientRequest, int ss
                     LOG("Server Details sent to client", true);
                 }
 
-                LOG("Forwarding PRIVILEDGED request to storage server successful", true);
+                LOG("Forwarding NON-PRIVILEDGED request to client successful", true);
                 return true;
             } else {
                 LOG("Request Type : PRIVILEDGED", true);
@@ -235,4 +236,20 @@ bool handleClientRequest(int* clientSocket, ClientRequest* clientRequest, int ss
         handleWrongPath(clientSocket);
         return false;
     }
+}
+
+/**
+ * @brief To find the storage server idx given the path
+ * 
+ * @param address The address we are looking for
+ * @param servers The list of ServerDetail objects
+ * 
+ * @returns the server idx
+ */
+int findStorageServer(const char* address, ServerDetails* servers) {
+    /*
+        @Anika-Roy will be handling this part
+    */
+
+   return 0; /* Hardcoded for now */
 }

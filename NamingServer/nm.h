@@ -55,7 +55,10 @@ bool acceptNewConnection(int* storageServerSocket, int* serverSocket, struct soc
 // Function to receive server details
 bool receiveServerDetails(int* storageServerSocket, ServerDetails* receivedServerDetails);
 
-// Function to spawn alivee check thread
+// Function to spawn alive check thread
 void spawnAliveThread(void* aliveThreadAsk);
+
+// Function to find the storage server corresponding to the given address
+int findStorageServer(const char* address, ServerDetails* servers);
 
 #endif // NM_H

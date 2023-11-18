@@ -44,11 +44,12 @@ void* handleClientCommunication(void* arg) {
         }
 
         LOG("Received Client Request", true);
+
         // Search in the serverDetails to find
         // which storage server has the requested
         // path inside it. Do this for all num_args
         // number of arguments.
-        int ss_num = 0; /* Hardcoded for now */;
+        int ss_num = findStorageServer(clientRequest.arg1, servers);
 
         if (!handleClientRequest(&clientSocket, &clientRequest, ss_num, servers)) {
             LOG("Failed to process client request", false);

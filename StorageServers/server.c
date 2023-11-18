@@ -142,6 +142,8 @@ void* clientThread(void* arg) {
             printf("Error sending ack to client\n");
             exit(-1);
         }
+
+        close(cltSocket);
     }
     return NULL;
 }
@@ -182,7 +184,9 @@ int main(int argc, char *argv[]) {
     }
 
     // Add accessible paths later
-    /* TBD */
+    /* TBD
+        @Anika-Roy will be handling this
+     */
 
     // Send the server details to the NM
     if (send(sock_fd, &serverDetails, sizeof(ServerDetails), 0) < 0) {

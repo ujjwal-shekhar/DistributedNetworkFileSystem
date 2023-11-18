@@ -55,7 +55,7 @@ int main() {
     // Create a socket
     int sock_fd = socket(SOCKET_FAMILY, SOCKET_TYPE, SOCKET_PROTOCOL);
     if (sock_fd < 0) {
-        printf("Error creating socket\n");
+        perror("Error creating socket\n");
         exit(-1);
     }
 
@@ -68,8 +68,9 @@ int main() {
 
     // Connect to the server
     if (connect(sock_fd, (struct sockaddr*) &server_addr, sizeof(server_addr)) < 0) {
-        printf("Error connecting to server\n");
-        exit(-1);
+        perror("Error connecting to server\n");
+        close(sock_fd);
+        exit(EXIT_FAILURE);
     }
 
     while (true) {
@@ -102,30 +103,39 @@ int main() {
 
         // Validate the request syntax
         if (!isValidRequest(request, &clientRequest)) {
-            printf("Invalid request syntax\n");
-            return 0;
+            perror("Invalid request syntax\n");
+            close(sock_fd);
+            exit(EXIT_FAILURE);
         }
+        printf("\nThe request is valid\n");
 
         /* Handle Server bt */
         // Send the request to the server
         if (send(sock_fd, &clientRequest, sizeof(clientRequest), 0) < 0) {
-            printf("Error sending request to server\n");
-            exit(-1);
+            perror("Error sending request to server\n");
+            close(sock_fd);
+            exit(EXIT_FAILURE);
         }
+
+        printf("Sent the client request to NM\n");
 
         // Receive the AckPacket from server
         AckPacket ack;
         if (recv(sock_fd, &ack, sizeof(ack), 0) < 0) {
-            printf("Error receiving ack from server\n");
-            exit(-1);
+            perror("Error receiving ack from server\n");
+            close(sock_fd);
+            exit(EXIT_FAILURE);
         }
+
+        printf("Received ack from server : %d : %d\n", ack.ack, ack.errorCode);
 
         // Check if you got a FAILURE_ACK
         // Inform the error on stdout
         if (ack.ack == FAILURE_ACK) {
             /* Make use of the error codes written */
             printf("There was an error\n");
-            continue;
+            close(sock_fd);
+            exit(EXIT_FAILURE);
         }
 
         // Now, since the ack is not FAILURE
@@ -136,7 +146,8 @@ int main() {
             // Receive the Job Status from NM
             if (recv(sock_fd, &ack, sizeof(ack), 0) < 0) {
                 printf("Error receiving ack from server\n");
-                exit(-1);
+                close(sock_fd);
+                exit(EXIT_FAILURE);
             }
 
             // Print the Job Status on stdout to inform the user
@@ -146,13 +157,13 @@ int main() {
                 printf("Job failed to complete\n");
             }
         } else if (ack.ack == CNNCT_TO_SRV_ACK) { // We must connect to the server
-            printf("Time to send requests to the server\n");
-
+            printf("CNNCT_TO_SRV_ACK received\n");
             // Receive the server details from NM
             ServerDetails server;
             if (recv(sock_fd, &server, sizeof(server), 0) < 0) {
-                printf("Error receiving server details from server\n");
-                exit(-1);
+                printf("Error receiving server details from naming server\n");
+                close(sock_fd);
+                exit(EXIT_FAILURE);
             }
 
             // Print the server details
@@ -163,9 +174,11 @@ int main() {
 
             // Create new socket
             int clt_srv_fd = socket(SOCKET_FAMILY, SOCKET_TYPE, SOCKET_PROTOCOL);
-            if (sock_fd < 0) {
+            if (clt_srv_fd < 0) {
                 printf("Error creating socket\n");
-                exit(-1);
+                close(sock_fd);
+                close(clt_srv_fd);
+                exit(EXIT_FAILURE);
             }
 
             // Create a sockaddr_in struct for the server
@@ -179,19 +192,25 @@ int main() {
             // Connect to the server
             if (connect(clt_srv_fd, (struct sockaddr*) &storage_server_addr, sizeof(storage_server_addr)) < 0) {
                 printf("Error connecting to server\n");
-                exit(-1);
+                close(sock_fd);
+                close(clt_srv_fd);
+                exit(EXIT_FAILURE);
             }
 
             // send() the request
             if (send(clt_srv_fd, &clientRequest, sizeof(clientRequest), 0) < 0) {
                 printf("Error sending client request to storage server\n");
-                exit(-1);
+                close(sock_fd);
+                close(clt_srv_fd);
+                exit(EXIT_FAILURE);
             }
 
             // Wait for the ack
             if (recv(clt_srv_fd, &ack, sizeof(ack), 0) < 0) {
                 printf("Error receiving ack from storage server\n");
-                exit(-1);
+                close(sock_fd);
+                close(clt_srv_fd);
+                exit(EXIT_FAILURE);
             }
 
             // Print the response ack
@@ -200,6 +219,8 @@ int main() {
             } else {
                 printf("Error!\n");
             }
+
+            close(clt_srv_fd);
         }
     }
 
