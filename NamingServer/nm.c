@@ -85,8 +85,6 @@ void* aliveThreadAsk(void* arg) {
         // Receive "CHECK" packet + serverID from the server
         // Sleep for 10 seconds
         // sleep(10);
-        printf("Alive thread was started\n");
-
         break;
     }
     return NULL;
@@ -154,6 +152,7 @@ void* listenServerRequests(void* arg) {
         if (!acceptNewConnection(&storageServerSocket, &serverSocket, &clientAddr, &clientLen)) {
             continue; // Failed to connect
         }
+        LOG("Connection established with storage server", true);
 
         // ServerDetails struct to be populated by 
         // receiving from the server.
@@ -162,6 +161,8 @@ void* listenServerRequests(void* arg) {
             close(storageServerSocket); // Since we failed to receive, close the socket
             continue; // Failed to receive server details
         }
+        LOG("Received server details", true);
+        printf("ONLINE : %d : %s\n", receivedServerDetails.serverID, ((receivedServerDetails.online) ? "YES" : "NO"));
 
         if (!registerNewServer(
             servers,

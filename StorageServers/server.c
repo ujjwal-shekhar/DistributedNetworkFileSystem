@@ -159,6 +159,8 @@ int main(int argc, char *argv[]) {
     serverDetails.port_nm = atoi(argv[3]);
     serverDetails.online = true;
 
+    printf("ONLINE : %s\n", ((serverDetails.online) ? "YES" : "NO"));
+
     // Create a socket
     int sock_fd = socket(SOCKET_FAMILY, SOCKET_TYPE, SOCKET_PROTOCOL);
     if (sock_fd < 0) {

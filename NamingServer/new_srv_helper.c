@@ -41,7 +41,7 @@ bool registerNewServer(
         ack.errorCode = SERVER_ALREADY_REGISTERED;
         ack.ack = FAILURE_ACK;
         sendAckToClient(storageServerSocket, &ack);
-        LOG("Server was already registered", false);
+        LOG("Server was already registered11", false);
         return false;
     } else { 
         // Register the new server
