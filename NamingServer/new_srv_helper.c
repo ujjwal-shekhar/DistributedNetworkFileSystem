@@ -110,43 +110,6 @@ void initializeServerDetails(ServerDetails* servers) {
 }
 
 /**
- * @brief Creates and configures the server socket.
- * 
- * This function creates and configures the server socket, binding it to the appropriate port
- * and starting to listen for connections.
- * 
- * @param serverSocket : Pointer to an integer where the server socket will be stored.
- * 
- */
-void createAndConfigureServerSocket(int *serverSocket) {
-    *serverSocket = socket(SOCKET_FAMILY, SOCKET_TYPE, SOCKET_PROTOCOL);
-    if (*serverSocket < 0) {
-        perror("Error creating socket");
-        exit(EXIT_FAILURE);
-    }
-
-    struct sockaddr_in serverAddr;
-    memset(&serverAddr, 0, sizeof(serverAddr));
-    serverAddr.sin_family = SOCKET_FAMILY;
-    serverAddr.sin_port = htons(NM_NEW_SRV_PORT);
-    serverAddr.sin_addr.s_addr = INADDR_ANY;
-
-    if (bind(*serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
-        perror("Error binding socket");
-        close(*serverSocket);
-        exit(EXIT_FAILURE);
-    }
-
-    if (listen(*serverSocket, MAX_LISTEN_BACKLOG) < 0) {
-        perror("Error listening for connections");
-        close(*serverSocket);
-        exit(EXIT_FAILURE);
-    }
-
-    printf("\x1b[32mNaming Server is listening for SERVER connections...\x1b[0m\n");
-}
-
-/**
  * @brief Accepts a new connection.
  * 
  * This function accepts a new connection on the provided server socket and returns the

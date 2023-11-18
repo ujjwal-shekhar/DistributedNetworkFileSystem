@@ -34,7 +34,7 @@
             GREENCOLOR("+"), server->serverID, server->port_nm, server->port_client, (server->online ? GREENCOLOR("online") : REDCOLOR("offline"))); \
         fclose(fptr); \
     } \
-    printf("[%s\e[0m]: Server ID: %d, Server port_nm: %d, Server port_client: %d, Server online: %s\n", \
+    printf("[%s\e[0m]: Server ID: %d\n    Server port_nm: %d\n    Server port_client: %d\n    Server online: %s\n", \
         GREENCOLOR("+"), server->serverID, server->port_nm, server->port_client, (server->online ? GREENCOLOR("online") : REDCOLOR("offline"))); \
 } while (0)
 
@@ -47,7 +47,7 @@
             clientRequest->num_args, clientRequest->arg1, clientRequest->arg2); \
         fclose(fptr); \
     } \
-    printf("[%s\e[0m]: Client ID: %d, Request Type: %d, Num Args: %d, Arg1: %s, Arg2: %s\n", \
+    printf("[%s\e[0m]: Client ID: %d\  n    Request Type: %d\n      Num Args: %d\n      Arg1: %s\n      Arg2: %s\n", \
         GREENCOLOR("+"), clientRequest->clientDetails.clientID, clientRequest->requestType, \
         clientRequest->num_args, clientRequest->arg1, clientRequest->arg2); \
 } while (0)

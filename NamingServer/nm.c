@@ -50,7 +50,9 @@ void* handleClientCommunication(void* arg) {
         // number of arguments.
         int ss_num = 0; /* Hardcoded for now */;
 
-        handleClientRequest(&clientSocket, &clientRequest, ss_num, servers);
+        if (!handleClientRequest(&clientSocket, &clientRequest, ss_num, servers)) {
+            LOG("Failed to process client request", false);
+        }
     }
 
     // Close the client socket when communication is done

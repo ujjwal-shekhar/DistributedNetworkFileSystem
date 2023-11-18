@@ -22,7 +22,7 @@ void printServerInfo(ServerDetails server) {
  */
 bool sendAckToClient(int* clientSocket, AckPacket* ack) {
     if (send(*clientSocket, ack, sizeof(AckPacket), 0) < 0) {
-        LOG("Error sending ACK to client", false);
+        LOG("Error sending ACK", false);
         return false;
     }
     return true;
@@ -33,11 +33,15 @@ bool sendAckToClient(int* clientSocket, AckPacket* ack) {
  * 
  * @param clientSocket : Client socket file descriptor.
  * @param serverDetails : Pointer to ServerDetails struct containing server details.
+ * 
+ * @return true if server details was sent, false otherwise.
  */
-void sendServerDetailsToClient(int* clientSocket, ServerDetails* serverDetails) {
+bool sendServerDetailsToClient(int* clientSocket, ServerDetails* serverDetails) {
     if (send(*clientSocket, serverDetails, sizeof(ServerDetails), 0) < 0) {
-        perror("Error sending server details to client");
+        LOG("Error sending server details to client", false);
+        return false;
     }
+    return true;
 }
 
 /**
@@ -75,12 +79,12 @@ void handleWrongPath(int* clientSocket) {
  * @param ackType : Type of acknowledgment.
  * @param errorCode : Error code indicating the status of the operation.
  */
-void sendConnectionAcknowledgment(int* clientSocket, AckBit ackType, ErrorCode errorCode) {
-    printf("Sending a connection acknowledgement\n");
+bool sendConnectionAcknowledgment(int* clientSocket, AckBit ackType, ErrorCode errorCode) {
+    LOG("Sending a connection acknowledgement", true);
     AckPacket cltAck;
     cltAck.ack = ackType;
     cltAck.errorCode = errorCode;
-    sendAckToClient(clientSocket, &cltAck);
+    return sendAckToClient(clientSocket, &cltAck);
 }
 
 /**
@@ -91,53 +95,59 @@ void sendConnectionAcknowledgment(int* clientSocket, AckBit ackType, ErrorCode e
  * @param ss_num : Storage server number.
  * @param servers : Pointer to an array of ServerDetails structs containing server details.
  */
-void forwardClientRequestToServer(int* clientSocket, ClientRequest* clientRequest, int ss_num, ServerDetails* servers) {
+bool forwardClientRequestToServer(int* clientSocket, ClientRequest* clientRequest, int ss_num, ServerDetails* servers) {
     // Connect to the storage server
-    int storage_fd = connectToStorageServer(ss_num, servers);
+    int storage_fd; connectToStorageServer(&storage_fd, ss_num, servers);
     if (storage_fd < 0) {
-        close(*clientSocket);
-        return;
+        return false;
     }
 
     // Send the clientRequest to the storage server
     if (send(storage_fd, clientRequest, sizeof(ClientRequest), 0) < 0) {
-        perror("Can't send clientRequest to storage server");
-        close(*clientSocket);
+        LOG("Can't send clientRequest to storage server", false);
         close(storage_fd);
-        return;
+        return false;
     }
+    LOG("Sent ClientRequest to storage server successfully", true);
 
     // Receive the acknowledgment from the storage server
     AckPacket nmAck;
     if (recv(storage_fd, &nmAck, sizeof(AckPacket), 0) < 0) {
-        perror("Error receiving acknowledgment from storage server");
-        close(*clientSocket);
+        LOG("Error receiving acknowledgment from storage server", false);
         close(storage_fd);
-        return;
+        return false;
     }
+    LOG("Received acknowledgement from storage server", true);
 
     // Forward the acknowledgment to the client
-    sendAckToClient(clientSocket, &nmAck);
+    if (!sendAckToClient(clientSocket, &nmAck)) {
+        return false;
+    }
 
-    printf("Acknowledgment received from storage server: %d\n", ss_num);
+    LOG("Forwarded acknowledgement from storage server to client", true);
 
     close(storage_fd);
+
+    return true;
 }
 
 /**
  * @brief Connects to the storage server.
  * 
+ * @param storage_fd : Socket to connect to storage server
  * @param ss_num : Storage server number.
  * @param servers : Pointer to an array of ServerDetails structs containing server details.
  * 
  * @return Storage server socket file descriptor.
  */
-int connectToStorageServer(int ss_num, ServerDetails* servers) {
-    int storage_fd = socket(SOCKET_FAMILY, SOCKET_TYPE, SOCKET_PROTOCOL);
-    if (storage_fd < 0) {
-        perror("Error creating storage socket");
-        return -1;
+bool connectToStorageServer(int* storage_fd, int ss_num, ServerDetails* servers) {
+    *storage_fd = socket(SOCKET_FAMILY, SOCKET_TYPE, SOCKET_PROTOCOL);
+    if (*storage_fd < 0) {
+        LOG("Error creating storage socket", false);
+        return false;
     }
+
+    LOG("Storage server socket for NM connection successfully established", true);
 
     // Create a sockaddr_in struct for the storage socket
     struct sockaddr_in server_addr;
@@ -147,13 +157,15 @@ int connectToStorageServer(int ss_num, ServerDetails* servers) {
     server_addr.sin_addr.s_addr = inet_addr(servers[ss_num].serverIP);
 
     // Connect to the storage server
-    if (connect(storage_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
-        perror("Can't connect to storage server");
-        close(storage_fd);
-        return -1;
+    if (connect(*storage_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+        LOG("Can't connect to storage server", true);
+        close(*storage_fd);
+        return false;
     }
 
-    return storage_fd;
+    LOG("NM connected to storage server", true);
+
+    return true;
 }
 
 /**
@@ -163,9 +175,12 @@ int connectToStorageServer(int ss_num, ServerDetails* servers) {
  * @param clientRequest : Pointer to ClientRequest struct containing client request details.
  * @param ss_num : Storage server number.
  * @param servers : Pointer to an array of ServerDetails structs containing server details.
+ * 
+ * @return  true on success, false on failure
  */
-void handleClientRequest(int* clientSocket, ClientRequest* clientRequest, int ss_num, ServerDetails* servers) {
-    // LOG("")
+bool handleClientRequest(int* clientSocket, ClientRequest* clientRequest, int ss_num, ServerDetails* servers) {
+    LOG_CLIENT_REQUEST(clientRequest);
+
     // Check if ss_num is within the valid range
     if (ss_num >= 0 && ss_num < MAX_SERVERS) {
         // Check if the server is online
@@ -177,21 +192,47 @@ void handleClientRequest(int* clientSocket, ClientRequest* clientRequest, int ss
                 clientRequest->requestType == WRITE_FILE ||
                 clientRequest->requestType == GET_FILE_INFO
             ) {
-                sendConnectionAcknowledgment(clientSocket, CNNCT_TO_SRV_ACK, SUCCESS);
+                LOG("Request Type : NON-PRIVILEDGED", true);
+                if (!sendConnectionAcknowledgment(clientSocket, CNNCT_TO_SRV_ACK, SUCCESS)) {
+                    LOG("Connection acknowledgement failed", false);
+                    return false;
+                } else {
+                    LOG("Connection acknowledgement succeeded", true);
+                }
 
                 // Send the ServerDetails to the client
-                sendServerDetailsToClient(clientSocket, &servers[ss_num]);
+                if (!sendServerDetailsToClient(clientSocket, &servers[ss_num])) {
+                    return false;
+                } else {
+                    LOG("Server Details sent to client", true);
+                }
+
+                LOG("Forwarding PRIVILEDGED request to storage server successful", true);
+                return true;
             } else {
-                sendConnectionAcknowledgment(clientSocket, INIT_ACK, SUCCESS);
+                LOG("Request Type : PRIVILEDGED", true);
+                if (!sendConnectionAcknowledgment(clientSocket, INIT_ACK, SUCCESS)) {
+                    LOG("Connection acknowledgement failed", false);
+                    return false;
+                }
 
                 // Send the clientRequest to the storage server
-                forwardClientRequestToServer(clientSocket, clientRequest, ss_num, servers);
-            }
+                if (!forwardClientRequestToServer(clientSocket, clientRequest, ss_num, servers)) {
+                    LOG("Couldn't forward request to storage server", false);
+                    return false;
+                }
 
+                LOG("Forwarding PRIVILEDGED request to storage server successful", true);
+                return true;
+            }
         } else {
+            LOG("The storage server was offline", false);
             handleServerOffline(clientSocket);
+            return false;
         }
     } else {
+        LOG("The path given by the client is invalid", false);
         handleWrongPath(clientSocket);
+        return false;
     }
 }
