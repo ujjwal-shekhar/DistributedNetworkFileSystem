@@ -1,5 +1,5 @@
 // server.c
-#include "../utils/headers.h"
+#include "server.h"
 
 #define MY_SRV_IP "127.0.0.1"
 
@@ -128,6 +128,7 @@ void* clientThread(void* arg) {
         // Print the response type
         if (clientRequest.requestType == READ_FILE) {
             printf("Read file: %s\n", clientRequest.arg1);
+            // read_file_in_ss(clientRequest.arg1, &cltSocket);
         } else if (clientRequest.requestType == WRITE_FILE) {
             printf("Write file: %s\n", clientRequest.arg1);
         } else if (clientRequest.requestType == GET_FILE_INFO) {

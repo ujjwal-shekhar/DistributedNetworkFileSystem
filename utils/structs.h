@@ -71,4 +71,16 @@ typedef struct AckPacket {
     int extraInfo[MAX_ACK_EXTRA_INFO];
 } AckPacket;
 
+/**
+ * @brief FilePacket struct to send details
+ * 
+ * @param chunk : informatino to send
+ * @param lastChunk : True, if this is the last chunk. Stop transmitting data.
+ *
+ */
+typedef struct FilePacket {
+    char chunk[MAX_CHUNK_SIZE + 1];
+    bool lastChunk;
+} FilePacket;
+
 #endif // STRUCTS_H
