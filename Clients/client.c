@@ -1,4 +1,4 @@
-#include "../utils/headers.h"
+#include "client.h"
 
 /**
  * @brief Check if the user request of the correct format
@@ -68,7 +68,7 @@ int main() {
 
     // Connect to the server
     if (connect(sock_fd, (struct sockaddr*) &server_addr, sizeof(server_addr)) < 0) {
-        perror("Error connecting to server\n");
+        perror("Error connecting to server");
         close(sock_fd);
         exit(EXIT_FAILURE);
     }
@@ -205,20 +205,39 @@ int main() {
                 exit(EXIT_FAILURE);
             }
 
-            // Wait for the ack
-            if (recv(clt_srv_fd, &ack, sizeof(ack), 0) < 0) {
-                printf("Error receiving ack from storage server\n");
-                close(sock_fd);
-                close(clt_srv_fd);
-                exit(EXIT_FAILURE);
+            // Check the request type
+            if (clientRequest.requestType == READ_FILE) {
+                if (!get_file_data_from_ss(&clt_srv_fd)) {
+                    printf("Error reading file from storage server\n");
+                    close(sock_fd);
+                    close(clt_srv_fd);
+                    exit(EXIT_FAILURE);
+                }
+            } else if (clientRequest.requestType == WRITE_FILE) {
+                if (!send_file_data_to_ss(&clt_srv_fd, clientRequest.arg1)) {
+                    printf("Error sending file to storage server\n");
+                    close(sock_fd);
+                    close(clt_srv_fd);
+                    exit(EXIT_FAILURE);
+                }
+            } else {
+
             }
 
-            // Print the response ack
-            if (ack.ack == SUCCESS_ACK) {
-                printf("Success!\n");
-            } else {
-                printf("Error!\n");
-            }
+            // // Wait for the ack
+            // if (recv(clt_srv_fd, &ack, sizeof(ack), 0) < 0) {
+            //     printf("Error receiving ack from storage server\n");
+            //     close(sock_fd);
+            //     close(clt_srv_fd);
+            //     exit(EXIT_FAILURE);
+            // }
+
+            // // Print the response ack
+            // if (ack.ack == SUCCESS_ACK) {
+            //     printf("Success!\n");
+            // } else {
+            //     printf("Error!\n");
+            // }
 
             close(clt_srv_fd);
         }

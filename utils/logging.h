@@ -33,7 +33,7 @@
         fprintf(fptr, "[%s]: Server ID: %d, Server port_nm: %d, Server port_client: %d, Server online: %s\n", \
             GREENCOLOR("+"), server->serverID, server->port_nm, server->port_client, (server->online ? GREENCOLOR("online") : REDCOLOR("offline"))); \
         fclose(fptr); \
-    } \ 
+    } \
     printf("[%s\e[0m]: Server ID: %d\n    Server port_nm: %d\n    Server port_client: %d\n    Server online: %s\n", \
         GREENCOLOR("+"), server->serverID, server->port_nm, server->port_client, (server->online ? GREENCOLOR("online") : REDCOLOR("offline"))); \
 } while (0)
