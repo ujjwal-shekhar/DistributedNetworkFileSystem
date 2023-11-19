@@ -2,11 +2,6 @@
 #ifndef HEADERS_H
 #define HEADERS_H
 
-// Include other globally available headers
-#include "constants.h"
-#include "structs.h"
-#include "logging.h"
-
 // Include standard libraries
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,5 +18,6 @@
 #include <arpa/inet.h>
 #include <stdbool.h>
 #include <semaphore.h>
+#include <dirent.h>
 
 #endif // HEADERS_H

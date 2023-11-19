@@ -1,4 +1,8 @@
 #include "client.h"
+#include "../utils/headers.h"
+#include "../utils/logging.h"
+#include "../utils/constants.h"
+#include "../utils/structs.h"
 
 /**
  * @brief Retrieve file data from the storage server and print it to stdout.

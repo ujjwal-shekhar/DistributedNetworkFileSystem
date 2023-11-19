@@ -1,4 +1,8 @@
 #include "client.h"
+#include "../utils/headers.h"
+#include "../utils/logging.h"
+#include "../utils/constants.h"
+#include "../utils/structs.h"
 
 /**
  * @brief Check if the user request of the correct format

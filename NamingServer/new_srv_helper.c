@@ -1,5 +1,9 @@
 #include "nm.h"
- 
+#include "../utils/headers.h"
+#include "../utils/logging.h"
+#include "../utils/constants.h"
+#include "../utils/structs.h"
+
 /**
  * @brief Registers a new storage server with the naming server.
  * 
@@ -32,7 +36,7 @@ bool registerNewServer(
     // Extract server ID from received details
     int serverID = receivedServerDetails->serverID;
 
-    LOG("Registering server", true);
+    LOG("yihihihdfisdhfishdfRegistering server", true);
     LOG_SERVER_DETAILS(receivedServerDetails);
 
     // Check if the server is already online

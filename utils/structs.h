@@ -4,7 +4,7 @@
 #define STRUCTS_H
 
 // Include necessary headers
-#include <stdbool.h>
+#include "headers.h"
 #include "constants.h"
 
 /**
@@ -54,6 +54,7 @@ typedef struct ServerDetails {
     char serverIP[IP_LEN];
     int port_nm;
     int port_client;
+    int num_paths;
     char accessible_paths[MAX_PATHS][MAX_PATH_LEN];
     bool online;
 } ServerDetails;
