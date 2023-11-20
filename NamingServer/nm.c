@@ -11,6 +11,7 @@ pthread_t clientThreads[MAX_CLIENTS];           // List of client threads
 pthread_t serverNMThreads[MAX_CLIENTS];         // List of client <-> NM interaction threads
 ServerDetails servers[MAX_SERVERS];             // List of servers
 sem_t servers_initialized;                      // Semaphore to wait for MIN_SERVERS to come alive before client requests begin
+trienode * root = NULL;                         // Global trie
 
 int num_servers_running = 0;                    // Keep track of the number of servers running
 sem_t num_servers_running_mutex;                // Binary semaphore to lock the critical section    
@@ -53,9 +54,15 @@ void* handleClientCommunication(void* arg) {
         // which storage server has the requested
         // path inside it. Do this for all num_args
         // number of arguments.
-        int ss_num = findStorageServer(clientRequest.arg1, servers);
 
-        if (!handleClientRequest(&clientSocket, &clientRequest, ss_num, servers)) {
+        int ss_num = findStorageServer(clientRequest.arg1, root);
+
+        // snprintf to add the ss_num found
+        char inform_log[1024];
+        snprintf(inform_log, 1024, "Found storage server %d for path %s", ss_num, clientRequest.arg1);
+        LOG(inform_log, true);        
+
+        if ((ss_num < 0) || (!handleClientRequest(&clientSocket, &clientRequest, ss_num, servers))) {
             LOG("Failed to process client request", false);
         }
     }
@@ -177,7 +184,8 @@ void* listenServerRequests(void* arg) {
             server_fds,
             &num_servers_running,
             aliveThreadAsk,
-            &receivedServerDetails  // Pass receivedServerDetails to the function
+            &receivedServerDetails,  // Pass receivedServerDetails to the function,
+            &root
         )) {
             // Failed to register
             close(storageServerSocket);

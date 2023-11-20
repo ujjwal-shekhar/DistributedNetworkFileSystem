@@ -63,6 +63,11 @@ void* nmThread(void* arg) {
             exit(EXIT_FAILURE);
         }
 
+        // Remove the "/" at the beginning"
+        if (clientRequest.arg1[0] == '/') {
+            memmove(clientRequest.arg1, clientRequest.arg1 + 1, strlen(clientRequest.arg1));
+        }
+
         // Process clientRequest
         if (clientRequest.requestType == CREATE_DIR) {
             createDirectory(clientRequest.arg1);
@@ -133,6 +138,11 @@ void* clientThread(void* arg) {
         AckPacket ack;
         ack.errorCode = SUCCESS;
         ack.ack = SUCCESS_ACK;
+
+        // Remove the "/" at the beginning"
+        if (clientRequest.arg1[0] == '/') {
+            memmove(clientRequest.arg1, clientRequest.arg1 + 1, strlen(clientRequest.arg1));
+        }
 
         // Print the response type
         if (clientRequest.requestType == READ_FILE) {

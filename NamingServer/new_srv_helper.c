@@ -32,7 +32,8 @@ bool registerNewServer(
     int* server_fds,
     int* num_servers_running,
     void * aliveThreadAsk,
-    ServerDetails* receivedServerDetails
+    ServerDetails* receivedServerDetails,
+    trienode** root
 ) {
     // Extract server ID from received details
     int serverID = receivedServerDetails->serverID;
@@ -54,6 +55,11 @@ bool registerNewServer(
             servers[serverID] = *receivedServerDetails;
             servers[serverID].online = true;
             server_fds[serverID] = *storageServerSocket;
+
+            // Populate the trie
+            for (int i = 0; i < servers[serverID].num_paths; i++) {
+                trieinsert(root, servers[serverID].accessible_paths[i], serverID);
+            }
         sem_post(num_servers_running_mutex);
 
         // Send SUCCESS_ACK to the server

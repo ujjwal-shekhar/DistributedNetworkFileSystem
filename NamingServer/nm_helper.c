@@ -243,6 +243,10 @@ bool handleClientRequest(int* clientSocket, ClientRequest* clientRequest, int ss
     }
 }
 
+/***************************************************/
+/*            Efficient Search goes here           */
+/***************************************************/
+
 /**
  * @brief To find the storage server idx given the path
  * 
@@ -251,10 +255,91 @@ bool handleClientRequest(int* clientSocket, ClientRequest* clientRequest, int ss
  * 
  * @returns the server idx
  */
-int findStorageServer(const char* address, ServerDetails* servers) {
-    /*
-        @Anika-Roy will be handling this part
-    */
+int findStorageServer(char* address, trienode* root) {
+   return search_trie(root, address);
+}
 
-   return 0; /* Hardcoded for now */
+/**
+ * @brief Creates a new trie node and initializes its members.
+ * 
+ * @return A pointer to the newly created trie node.
+ */
+trienode* createnode() {
+    trienode* node = (trienode*) malloc(sizeof(trienode));
+
+    for(int i=0; i<NUM_CHARS; i++){
+        node->children[i] = NULL;
+    }
+    node->storage_server = -1;
+    node->isFile = false;
+    node->isEndOfWord = false;
+    return node;
+}
+
+/**
+ * @brief Inserts a path into the trie along with the corresponding storage server ID.
+ * 
+ * @param root: Pointer to the root of the trie.
+ * @param signedtext: Path to be inserted.
+ * @param serverID: Storage server ID for the path.
+ */
+void trieinsert (trienode** root, char* signedtext, int serverID) {
+    if (*root == NULL) {
+        *root = createnode();
+    }
+
+    unsigned char* text = (unsigned char*) signedtext;     // just in case we don't get negative indexes
+    trienode* curr = *root;
+    int length = strlen(signedtext);
+
+    for (int i = 0 ; i < length ; i++) {
+        if(curr->children[text[i]] == NULL){
+            // create a node
+            curr->children[text[i]] = createnode();
+        }
+
+        curr = curr->children[text[i]];
+        if (text[i]=='/') {
+            curr->isFile = false;
+            curr->storage_server = serverID;
+            curr->isEndOfWord = true;
+        }
+    }
+
+    if (text[length-1]!='/') {
+        curr->isFile = true;
+        curr->isEndOfWord = true;
+        curr->storage_server = serverID;
+    }
+    
+}
+
+/**
+ * @brief Searches for a path in the trie and returns the corresponding storage server ID.
+ * 
+ * @param root: Pointer to the root of the trie.
+ * @param signedtext: Path to be searched.
+ * 
+ * @return The storage server ID if the path is found, -1 otherwise.
+ */
+int search_trie (trienode* root, char* signedtext) {
+    if(root == NULL){
+        return false;
+    }
+
+    printf("Searching for the path : %s", signedtext);
+
+    unsigned char* text = (unsigned char*)signedtext;
+    trienode* curr = root;
+    int length = strlen(signedtext);
+
+    for(int i=0 ; i<length ; i++){
+        if(curr->children[text[i]] == NULL){
+            return false;
+        }
+
+        curr = curr->children[text[i]];
+    }
+
+    return ((curr->isEndOfWord) ? (curr->storage_server) : (-1)); // -1 marks path nowhere
 }

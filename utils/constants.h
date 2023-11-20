@@ -18,6 +18,7 @@
 #define MAX_ACK_EXTRA_INFO 100
 #define NUM_INIT_SERVERS 1
 #define MAX_CHUNK_SIZE 1024
+#define NUM_CHARS 256
 
 // Timeout intervals
 #define MAX_NM_TO_CLT_TIMEOUT 30

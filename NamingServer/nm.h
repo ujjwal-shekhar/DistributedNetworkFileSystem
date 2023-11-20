@@ -43,7 +43,8 @@ bool registerNewServer(
     int* server_fds,
     int* num_servers_running,
     void * aliveThreadAsk,
-    ServerDetails* receivedServerDetails
+    ServerDetails* receivedServerDetails,
+    trienode** root
 );
 
 // Function to close the server socket
@@ -62,6 +63,11 @@ bool receiveServerDetails(int* storageServerSocket, ServerDetails* receivedServe
 void spawnAliveThread(void* aliveThreadAsk);
 
 // Function to find the storage server corresponding to the given address
-int findStorageServer(const char* address, ServerDetails* servers);
+int findStorageServer(char* address, trienode* root);
+
+// Helper and manager functions for the trie search
+trienode* createnode();
+void trieinsert(trienode** root, char* signedtext, int serverID);
+int search_trie(trienode* root, char* signedtext);
 
 #endif // NM_H
