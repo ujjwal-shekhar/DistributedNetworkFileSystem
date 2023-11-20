@@ -19,5 +19,6 @@
 #include <stdbool.h>
 #include <semaphore.h>
 #include <dirent.h>
+#include <ctype.h>
 
 #endif // HEADERS_H

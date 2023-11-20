@@ -5,6 +5,39 @@
 #include "../utils/structs.h"
 
 /**
+ * @brief Trim leading and trailing whitespaces from the given string.
+ *
+ * @param str The input string to be trimmed.
+ */
+void trimWhitespace(char *str) {
+    int start = 0, end = strlen(str) - 1;
+
+    // Trim leading whitespaces
+    while (isspace((unsigned char)str[start])) {
+        start++;
+    }
+
+    // All whitespaces
+    if (start == end + 1) {
+        str[0] = '\0';
+        return;
+    }
+
+    // Trim trailing whitespaces
+    while (isspace((unsigned char)str[end])) {
+        end--;
+    }
+
+    // Shift the string to remove leading whitespaces
+    for (int i = 0; i <= end - start; i++) {
+        str[i] = str[start + i];
+    }
+
+    // Null-terminate the trimmed string
+    str[end - start + 1] = '\0';
+} 
+
+/**
  * @brief Check if the user request of the correct format
  * 
  * @param request : the request string
@@ -12,23 +45,23 @@
  * 
  * @return true if valid syntax
  */
-bool isValidRequest (char* request, ClientRequest* clientRequest) {
+bool isValidRequest(char *request, ClientRequest *clientRequest) {
     // Tokenize the string by space
-    char* token = strtok(request, " ");
+    char *token = strtok(request, " ");
 
     // Set the RequestType to the first token
     if (strcmp(token, CREATEDIR) == 0) {
-        clientRequest->requestType = CREATE_DIR;
+        clientRequest->requestType = CREATE_DIR; // CREATE_DIR
     } else if (strcmp(token, CREATEFILE) == 0) {
-        clientRequest->requestType = CREATE_FILE;
+        clientRequest->requestType = CREATE_FILE; // CREATE_FILE
     } else if (strcmp(token, READFILE) == 0) {
-        clientRequest->requestType = READ_FILE;
+        clientRequest->requestType = READ_FILE; // READ_FILE
     } else if (strcmp(token, WRITEFILE) == 0) {
-        clientRequest->requestType = WRITE_FILE;
+        clientRequest->requestType = WRITE_FILE; // WRITE_FILE
     } else if (strcmp(token, DELETEFILE) == 0) {
-        clientRequest->requestType = DELETE_FILE;
+        clientRequest->requestType = DELETE_FILE; // DELETE_FILE
     } else if (strcmp(token, DELETEDIR) == 0) {
-        clientRequest->requestType = DELETE_DIR;
+        clientRequest->requestType = DELETE_DIR; // DELETE_DIR
     } else {
         return false;
     }
@@ -42,8 +75,10 @@ bool isValidRequest (char* request, ClientRequest* clientRequest) {
         if (token != NULL) {
             if (clientRequest->num_args == 0) {
                 strcpy(clientRequest->arg1, token);
+                trimWhitespace(clientRequest->arg1);
             } else if (clientRequest->num_args == 1) {
                 strcpy(clientRequest->arg2, token);
+                trimWhitespace(clientRequest->arg2);
             } else {
                 return false;
             }
@@ -54,6 +89,7 @@ bool isValidRequest (char* request, ClientRequest* clientRequest) {
     // Return true if the number of arguments is valid
     return (clientRequest->num_args == 2 || clientRequest->num_args == 1);
 }
+
 
 int main() {
     // Create a socket
@@ -97,6 +133,9 @@ int main() {
         if (isWhiteSpace) {
             break;
         }
+
+        // Trim all whitespace from the beginning 
+        // and end of the arg1 and arg2
 
         // Make an empty ClientRequest 
         ClientRequest clientRequest;
@@ -209,24 +248,24 @@ int main() {
                 exit(EXIT_FAILURE);
             }
 
-            // // Check the request type
-            // if (clientRequest.requestType == READ_FILE) {
-            //     if (!get_file_data_from_ss(&clt_srv_fd)) {
-            //         printf("Error reading file from storage server\n");
-            //         close(sock_fd);
-            //         close(clt_srv_fd);
-            //         exit(EXIT_FAILURE);
-            //     }
-            // } else if (clientRequest.requestType == WRITE_FILE) {
-            //     if (!send_file_data_to_ss(&clt_srv_fd, clientRequest.arg1)) {
-            //         printf("Error sending file to storage server\n");
-            //         close(sock_fd);
-            //         close(clt_srv_fd);
-            //         exit(EXIT_FAILURE);
-            //     }
-            // } else {
+            // Check the request type
+            if (clientRequest.requestType == READ_FILE) {
+                if (!get_file_data_from_ss(&clt_srv_fd)) {
+                    printf("Error reading file from storage server\n");
+                    close(sock_fd);
+                    close(clt_srv_fd);
+                    exit(EXIT_FAILURE);
+                }
+            } else if (clientRequest.requestType == WRITE_FILE) {
+                if (!send_file_data_to_ss(&clt_srv_fd, clientRequest.arg1)) {
+                    printf("Error sending file to storage server\n");
+                    close(sock_fd);
+                    close(clt_srv_fd);
+                    exit(EXIT_FAILURE);
+                }
+            } else {
 
-            // }
+            }
 
             // Wait for the ack
             if (recv(clt_srv_fd, &ack, sizeof(ack), 0) < 0) {

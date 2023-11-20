@@ -1,4 +1,5 @@
 #include "nm.h"
+
 #include "../utils/headers.h"
 #include "../utils/logging.h"
 #include "../utils/constants.h"
@@ -36,7 +37,7 @@ bool registerNewServer(
     // Extract server ID from received details
     int serverID = receivedServerDetails->serverID;
 
-    LOG("yihihihdfisdhfishdfRegistering server", true);
+    LOG("Registering server", true);
     LOG_SERVER_DETAILS(receivedServerDetails);
 
     // Check if the server is already online

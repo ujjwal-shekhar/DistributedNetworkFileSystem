@@ -38,8 +38,11 @@
                 GREENCOLOR("+"), server->serverID, server->port_nm, server->port_client, (server->online ? GREENCOLOR("online") : REDCOLOR("offline")), server->num_paths); \
             fclose(fptr); \
         } \
-        printf("[%s\e[0m]: Server ID: %d\n     Server port_nm: %d\n     Server port_client: %d\n     Server online: %s\n     Num Paths accessible by server: %d\n", \
+        printf("[%s\e[0m]: Server ID: %d\n     Server port_nm: %d\n     Server port_client: %d\n     Server online: %s\n     Paths accessible by server: %d\n", \
             GREENCOLOR("+"), server->serverID, server->port_nm, server->port_client, (server->online ? GREENCOLOR("online") : REDCOLOR("offline")), server->num_paths); \
+        for (int i = 0; i < server->num_paths; i++) { \
+            printf("     %s\n", server->accessible_paths[i]); \
+        }\
     } while (0)
 
     // Define log function for logging client request
@@ -51,7 +54,7 @@
                 clientRequest->num_args, clientRequest->arg1, clientRequest->arg2); \
             fclose(fptr); \
         } \
-        printf("[%s\e[0m]: Client ID: %d\n    Request Type: %d\n      Num Args: %d\n      Arg1: %s\n      Arg2: %s\n", \
+        printf("[%s\e[0m]: Client ID: %d\n     Request Type: %d\n      Num Args: %d\n      Arg1: %s\n      Arg2: %s\n", \
             GREENCOLOR("+"), clientRequest->clientDetails.clientID, clientRequest->requestType, \
             clientRequest->num_args, clientRequest->arg1, clientRequest->arg2); \
     } while (0)

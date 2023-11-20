@@ -24,24 +24,33 @@ bool read_file_in_ss(char *path, int *cltSocket) {
 
         printf("Before entering the loop\n");
 
-        char buffer[MAX_CHUNK_SIZE];
+        char buffer[MAX_CHUNK_SIZE + 1];
 
-        while ((bytesRead = fread(buffer, 1, MAX_CHUNK_SIZE, file)) > 0) {
-                printf("%d read bytes: ", bytesRead);
-                break;
-                packet.lastChunk = (feof(file) != 0);
+        do {
+            // memset(0, buffer, MAX_CHUNK_SIZE + 1);
 
-                if (send(*cltSocket, &packet, sizeof(FilePacket), 0) < 0) {
-                        return false;
-                        perror("Error sending file packet to client");
-                }
+            bytesRead = fread(buffer, 1, MAX_CHUNK_SIZE, file);
 
-                printf("\nSending this : %s\n", packet.chunk);
+            // Fill the remaining part of the buffer with NULL
+            buffer[bytesRead] = '\0';
+            // memset(buffer + bytesRead, '\0', MAX_CHUNK_SIZE - bytesRead);
+            strcpy(packet.chunk, buffer);
 
-                if (packet.lastChunk) {
-                        break; // No need to continue if it's the last chunk
-                }
-        }
+            // printf("%zu read bytes: ", bytesRead);
+            packet.lastChunk = (feof(file) != 0);
+
+            if (send(*cltSocket, &packet, sizeof(FilePacket), 0) < 0) {
+                perror("Error sending file packet to client");
+                fclose(file);
+                return false;
+            }
+
+            printf("Sending this: %s\n", packet.chunk);
+
+            if (packet.lastChunk) {
+                break; // No need to continue if it's the last chunk
+            }
+        } while (bytesRead > 0);
 
         fclose(file);
 }
