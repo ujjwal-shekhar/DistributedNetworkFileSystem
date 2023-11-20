@@ -8,7 +8,9 @@
 #include "../utils/constants.h"
 #include "../utils/structs.h"
 
+// Read and write calls from the user interface
 bool read_file_in_ss(char *path, int *cltSocket);
+bool write_file_in_ss(char *path, int *cltSocket);
 
 void listFilesAndEmptyFolders(const char *path, ServerDetails *serverDetails);
 

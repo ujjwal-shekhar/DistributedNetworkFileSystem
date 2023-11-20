@@ -257,6 +257,7 @@ int main() {
                     exit(EXIT_FAILURE);
                 }
             } else if (clientRequest.requestType == WRITE_FILE) {
+                printf("Sending write file request\n");
                 if (!send_file_data_to_ss(&clt_srv_fd, clientRequest.arg1)) {
                     printf("Error sending file to storage server\n");
                     close(sock_fd);
@@ -264,7 +265,7 @@ int main() {
                     exit(EXIT_FAILURE);
                 }
             } else {
-
+                printf("Get file info ig\n");
             }
 
             // Wait for the ack

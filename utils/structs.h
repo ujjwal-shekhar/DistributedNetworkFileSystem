@@ -84,4 +84,20 @@ typedef struct FilePacket {
     bool lastChunk;
 } FilePacket;
 
+/**
+ * @brief Structure representing a node in a trie data structure.
+ * 
+ * @param children: Array of pointers to child nodes, each corresponding to a character.
+ * @param inStorageServer: Array indicating whether the node is present in each storage server.
+ * @param isFile: Boolean indicating whether the node represents a file.
+ * @param isEndOfWord: Boolean indicating whether the node marks the end of a word (path).
+ * 
+ */
+typedef struct trienode{
+    struct trienode *children[NUM_CHARS];
+    bool inStorageServer[MAX_STORAGE_SERVERS];
+    bool isFile;
+    bool isEndOfWord;
+} trienode;
+
 #endif // STRUCTS_H

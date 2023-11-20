@@ -137,9 +137,16 @@ void* clientThread(void* arg) {
         // Print the response type
         if (clientRequest.requestType == READ_FILE) {
             printf("Read file: %s\n", clientRequest.arg1);
-            read_file_in_ss(clientRequest.arg1, &cltSocket);
+            if (!read_file_in_ss(clientRequest.arg1, &cltSocket)) {
+                ack.errorCode = OTHER;
+                ack.ack = FAILURE_ACK;
+            }
         } else if (clientRequest.requestType == WRITE_FILE) {
             printf("Write file: %s\n", clientRequest.arg1);
+            if (!write_file_in_ss(clientRequest.arg1, &cltSocket)) {
+                ack.errorCode = OTHER;
+                ack.ack = FAILURE_ACK;
+            }
         } else if (clientRequest.requestType == GET_FILE_INFO) {
             printf("Get file info of : %s\n", clientRequest.arg1);
         }

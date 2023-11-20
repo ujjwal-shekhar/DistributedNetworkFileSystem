@@ -53,32 +53,92 @@ bool get_file_data_from_ss(int* clt_srv_fd) {
  * @return true if the operation is successful, false otherwise.
  */
 bool send_file_data_to_ss(int* clt_srv_fd, const char* filePath) {
-//     // Open the file for reading
-//     FILE* file = fopen(filePath, "rb");
-//     if (!file) {
-//         perror("Error opening file for reading");
-//         return false;
-//     }
+        FILE *tempFile = fopen("temp_buffer.txt", "w");
+        if (tempFile == NULL) {
+            perror("Error opening temp_buffer.txt for writing");
+            return false;
+        }
 
-//     struct FilePacket packet;
-//     size_t bytesRead;
+        printf("Enter text. Press Enter twice to finish:\n");
 
-//     while ((bytesRead = fread(packet.chunk, 1, MAX_CHUNK_SIZE, file)) > 0) {
-//         packet.lastChunk = feof(file) != 0;
+        char buffer[MAX_CHUNK_SIZE + 1];
+        int consecutiveEnters = 0;
 
-//         // Send file data packet to the server
-//         if (send(*clt_srv_fd, &packet, sizeof(struct FilePacket), 0) < 0) {
-//             perror("Error sending file data to storage server");
-//             fclose(file);
-//             return false;
-//         }
+        while (true) {
+            // Read a line from stdin
+            if (fgets(buffer, MAX_CHUNK_SIZE, stdin) == NULL) {
+                perror("Error reading from stdin");
+                fclose(tempFile);
+                return false;
+            }
 
-//         if (packet.lastChunk) {
-//             break;  // No need to continue if it's the last chunk
-//         }
-//     }
+            // Check for consecutive enters
+            if (buffer[0] == '\n') {
+                consecutiveEnters++;
+                if (consecutiveEnters == 2) {
+                    break;  // Exit the loop when two consecutive enters are encountered
+                }
+            } else {
+                consecutiveEnters = 0;  // Reset consecutiveEnters when a non-empty line is encountered
+            }
 
-//     fclose(file);
+            // Write the line to the temporary file
+            fputs(buffer, tempFile);
+        }
+
+        // Close the temporary file
+        fclose(tempFile);
+
+        printf("Text entered and saved to temp_buffer.txt.\n");
+
+        // Open the temporary file for reading
+        tempFile = fopen("temp_buffer.txt", "r");
+        if (tempFile == NULL) {
+            perror("Error opening temp_buffer.txt for reading");
+            return false;
+        }
+
+        printf("Made the file in client.\n");
+        // Send the file data to the server
+        FilePacket packet;
+        size_t bytesRead;
+
+        while (true) {
+            // Read a chunk from the file
+            bytesRead = fread(packet.chunk, 1, MAX_CHUNK_SIZE, tempFile);
+            packet.chunk[bytesRead] = '\0';
+
+            printf("Made the file in client : %s\n", packet.chunk);
+            
+            if (ferror(tempFile)) {
+                perror("Error reading from temp_buffer.txt");
+                fclose(tempFile);
+                return false;
+            }
+
+            // Set the lastChunk flag
+            packet.lastChunk = (feof(tempFile) != 0);
+
+            // Send the chunk to the server
+            if (send(*clt_srv_fd, &packet, sizeof(FilePacket), 0) < 0) {
+                perror("Error sending file packet to server");
+                fclose(tempFile);
+                return false;
+            }
+
+            if (packet.lastChunk) {
+                break; // No need to continue if it's the last chunk
+            }
+        }
+
+        // Close the temporary file
+        fclose(tempFile);
+
+        // Delete the temporary file
+        if (remove("temp_buffer.txt") != 0) {
+            perror("Error deleting temp_buffer.txt");
+            return false;
+        }
+
     return true;
-
 }

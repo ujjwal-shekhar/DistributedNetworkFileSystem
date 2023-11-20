@@ -5,10 +5,10 @@
 #include "../utils/structs.h"
 
 /**
- * @brief
+ * @brief Read file present in ss and send it to client
  *
- * @param path
- * @param cltSocket
+ * @param path : path of the file to be read
+ * @param cltSocket : client socket to be used for communication
  *
  * @returns
  */
@@ -53,6 +53,66 @@ bool read_file_in_ss(char *path, int *cltSocket) {
         } while (bytesRead > 0);
 
         fclose(file);
+
+        return true;
+}
+
+/**
+ * @brief Write file present in ss and send ack to client
+ *
+ * @param path : path of the file to be written to
+ * @param cltSocket : client socket to be used for communication
+ *
+ * @returns
+ */
+bool write_file_in_ss(char *path, int *cltSocket) {
+        FILE *file = fopen(path, "r");
+        if (file == NULL) {
+                perror("Error opening file for reading");
+                return false;
+        }
+
+        FilePacket packet;
+        size_t bytesRead;
+
+        printf("Before entering the loop for write request\n");
+
+        file = fopen(path, "w");
+        if (file == NULL) {
+                perror("Error opening file for writing");
+                return false;
+        }
+
+        fclose(file);
+
+        file = fopen(path, "a");
+        printf("the path here is : %s\n", path);
+
+        char buffer[MAX_CHUNK_SIZE + 1];
+
+        // Keep receiving packets until the last packet is received
+        do {
+            if (recv(*cltSocket, &packet, sizeof(FilePacket), 0) < 0) {
+                perror("Error sending file packet to client");
+                fclose(file);
+                return false;
+            }
+
+            printf("Receiving this: %s\n", packet.chunk);
+
+            // Append to the file // GPT complete this ples
+            fwrite(packet.chunk, 1, strlen(packet.chunk), file);
+
+            if (packet.lastChunk) {
+                break; // No need to continue if it's the last chunk
+            }
+        } while (bytesRead > 0);
+
+        printf("Done receiving\n");
+
+        fclose(file);
+
+        return true;
 }
 
 /**
