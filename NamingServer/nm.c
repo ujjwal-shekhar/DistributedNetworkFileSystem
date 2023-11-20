@@ -12,6 +12,7 @@ pthread_t serverNMThreads[MAX_CLIENTS];         // List of client <-> NM interac
 ServerDetails servers[MAX_SERVERS];             // List of servers
 sem_t servers_initialized;                      // Semaphore to wait for MIN_SERVERS to come alive before client requests begin
 trienode * root = NULL;                         // Global trie
+LRU lru[MAX_CACHE_SIZE];                        // LRU cache             
 
 int num_servers_running = 0;                    // Keep track of the number of servers running
 sem_t num_servers_running_mutex;                // Binary semaphore to lock the critical section    
@@ -55,7 +56,7 @@ void* handleClientCommunication(void* arg) {
         // path inside it. Do this for all num_args
         // number of arguments.
 
-        int ss_num = findStorageServer(clientRequest.arg1, root);
+        int ss_num = findStorageServer(clientRequest.arg1, root, lru);
 
         // snprintf to add the ss_num found
         char inform_log[1024];
@@ -303,6 +304,13 @@ int main() {
     // continue
     sem_init(&servers_initialized, 0, 0);
     sem_init(&num_servers_running_mutex, 0, 1);
+
+    // Initialize the cache
+    for (int i = 0; i < MAX_CACHE_SIZE; i++) {
+        lru[i].rank = 1e9;
+        lru[i].serverID = -1;
+        lru[i].pathHash = 0;
+    }
 
     // Log that the NM file is running
     LOG("NM file is running", true);

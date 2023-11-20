@@ -63,7 +63,7 @@ bool receiveServerDetails(int* storageServerSocket, ServerDetails* receivedServe
 void spawnAliveThread(void* aliveThreadAsk);
 
 // Function to find the storage server corresponding to the given address
-int findStorageServer(char* address, trienode* root);
+int findStorageServer(char* address, trienode* root, LRU* lru);
 
 // Helper and manager functions for the trie search
 trienode* createnode();

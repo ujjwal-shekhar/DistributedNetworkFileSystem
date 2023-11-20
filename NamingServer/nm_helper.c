@@ -255,8 +255,39 @@ bool handleClientRequest(int* clientSocket, ClientRequest* clientRequest, int ss
  * 
  * @returns the server idx
  */
-int findStorageServer(char* address, trienode* root) {
-   return search_trie(root, address);
+int findStorageServer(char* address, trienode* root, LRU* lru) {
+    // Calculate the hash of the address
+    unsigned long long hash = 0;
+    for (int i = 0; i < strlen(address); i++) {
+        hash = (hash * ROLLING_PRIME + (address[i] - 'a')) % ROLLING_MODULO;
+    }
+
+    // Decay the rank of each entry
+    for (int i = 0; i < MAX_CACHE_SIZE; i++) {
+        lru[i].rank++;
+    }
+    
+    int maxRank = -1;
+    int maxRankIdx = -1;
+    // Check if the entry is in the LRU
+    for (int i = 0; i < MAX_CACHE_SIZE; i++) {
+        if (maxRank < lru[i].rank) {
+            maxRank = lru[i].rank;
+            maxRankIdx = i;
+        }
+
+        if (lru[i].pathHash == hash) {
+            lru[i].rank = 0;
+            return lru[i].serverID;
+        }
+    }
+
+    // Put the entry in the LRU
+    lru[maxRankIdx].pathHash = hash;
+    lru[maxRankIdx].rank = 0;
+    lru[maxRankIdx].serverID = search_trie(root, address);
+
+   return lru[maxRankIdx].serverID;
 }
 
 /**

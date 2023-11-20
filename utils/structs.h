@@ -100,4 +100,14 @@ typedef struct trienode{
     bool isEndOfWord;
 } trienode;
 
+/**
+ * @brief LRU caching for storing recent requests.
+ * 
+ */
+typedef struct LRU {
+    unsigned long long pathHash;  ///< Hash of the accessed path.
+    int serverID;                 ///< Storage server ID.
+    int rank;                     ///< Rank of athe 
+} LRU;
+
 #endif // STRUCTS_H

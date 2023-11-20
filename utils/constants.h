@@ -19,6 +19,9 @@
 #define NUM_INIT_SERVERS 1
 #define MAX_CHUNK_SIZE 1024
 #define NUM_CHARS 256
+#define MAX_CACHE_SIZE 5
+#define ROLLING_PRIME 31
+#define ROLLING_MODULO 1000000007
 
 // Timeout intervals
 #define MAX_NM_TO_CLT_TIMEOUT 30
