@@ -1,5 +1,10 @@
 #include "client.h"
 
+#include "../utils/logging.h"
+#include "../utils/headers.h"
+#include "../utils/constants.h"
+#include "../utils/structs.h"
+
 /**
  * @brief Retrieve file data from the storage server and print it to stdout.
  * 
@@ -25,13 +30,16 @@ bool get_file_data_from_ss(int* clt_srv_fd) {
         }
 
         // Print the received data to stdout
-        fwrite(packet.chunk, 1, bytesRead, stdout);
+        // fwrite(packet.chunk, 1, bytesRead, stdout);
+        printf("%s", packet.chunk);
 
         if (packet.lastChunk) {
             // Last chunk received, exit the loop
             break;
         }
     }
+
+    printf("\n");
 
     return true;
 }

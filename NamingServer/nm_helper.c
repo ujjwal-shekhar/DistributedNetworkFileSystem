@@ -1,5 +1,10 @@
 #include "nm.h"
 
+#include "../utils/headers.h"
+#include "../utils/logging.h"
+#include "../utils/constants.h"
+#include "../utils/structs.h"
+
 /**
  * @brief Prints server information to the console.
  * 
@@ -148,7 +153,7 @@ bool connectToStorageServer(int* storage_fd, int ss_num, ServerDetails* servers)
         return false;
     }
 
-    LOG("Storage server socket for NM connection successfully established", true);
+    LOG("Storage server socket for NM connection successfully made", true);
 
     // Create a sockaddr_in struct for the storage socket
     struct sockaddr_in server_addr;

@@ -3,6 +3,9 @@
 #define NM_H
 
 #include "../utils/headers.h"
+#include "../utils/logging.h"
+#include "../utils/constants.h"
+#include "../utils/structs.h"
 
 // Function to print server information
 void printServerInfo(ServerDetails server);

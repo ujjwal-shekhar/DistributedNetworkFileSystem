@@ -1,5 +1,9 @@
 // nm.c
 #include "nm.h"
+#include "../utils/headers.h"
+#include "../utils/logging.h"
+#include "../utils/constants.h"
+#include "../utils/structs.h"
 
 int client_fds[MAX_CLIENTS];                    // Make a list of client fds
 int server_fds[MAX_SERVERS];                    // Make a list of server fds

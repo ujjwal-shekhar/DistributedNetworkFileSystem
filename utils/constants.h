@@ -13,7 +13,7 @@
 #define MAX_REQUEST_SIZE 1024
 #define MAX_ARG_LEN 256
 #define MAX_LISTEN_BACKLOG 20
-#define MAX_PATH_LEN 256 
+#define MAX_PATH_LEN 1024
 #define MAX_PATHS 1000
 #define MAX_ACK_EXTRA_INFO 100
 #define NUM_INIT_SERVERS 1
@@ -71,9 +71,6 @@ typedef enum {
     STOP_ACK
 } AckBit;
 
-// LOGGING = 0 to store in server logs
-// LOGGING = 1 to print on stdout and store in server logs
-#define LOGGING 1
 #define NM_LOG_FILE "./naming_server.log"
 
 // NM IP address

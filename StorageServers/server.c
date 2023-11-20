@@ -1,5 +1,9 @@
 // server.c
 #include "server.h"
+#include "../utils/headers.h"
+#include "../utils/logging.h"
+#include "../utils/constants.h"
+#include "../utils/structs.h"
 
 #define MY_SRV_IP "127.0.0.1"
 
@@ -44,14 +48,14 @@ void* nmThread(void* arg) {
     struct sockaddr_in nm_addr;
     socklen_t nm_addr_len = sizeof(nm_addr);
 
-    // Accept a connection request
-    int nmSocket = accept(sock_fd, (struct sockaddr*) &nm_addr, &nm_addr_len);
-    if (nmSocket < 0) {
-        perror("Error accepting connection");
-        exit(EXIT_FAILURE);
-    }
-
     while (1) {
+        // Accept a connection request
+        int nmSocket = accept(sock_fd, (struct sockaddr*) &nm_addr, &nm_addr_len);
+        if (nmSocket < 0) {
+            perror("Error accepting connection");
+            exit(EXIT_FAILURE);
+        }
+
         // Receive clientRequest
         ClientRequest clientRequest;
         if (recv(nmSocket, &clientRequest, sizeof(ClientRequest), 0) < 0) {
@@ -61,13 +65,13 @@ void* nmThread(void* arg) {
 
         // Process clientRequest
         if (clientRequest.requestType == CREATE_DIR) {
-            printf("Creating directory\n");
+            createDirectory(clientRequest.arg1);
         } else if (clientRequest.requestType == CREATE_FILE) {
-            printf("Creating file\n");
+            createFile(clientRequest.arg1);
         } else if (clientRequest.requestType == DELETE_DIR) {
             printf("Delete directory\n");
         } else if (clientRequest.requestType == DELETE_FILE) {
-            printf("Delete file\n");
+            deleteFile(clientRequest.arg1);
         }
 
         // Send SUCCESS ACK to NM
@@ -125,10 +129,15 @@ void* clientThread(void* arg) {
             exit(EXIT_FAILURE);
         }
 
+        // Make the Ack bit ready
+        AckPacket ack;
+        ack.errorCode = SUCCESS;
+        ack.ack = SUCCESS_ACK;
+
         // Print the response type
         if (clientRequest.requestType == READ_FILE) {
             printf("Read file: %s\n", clientRequest.arg1);
-            // read_file_in_ss(clientRequest.arg1, &cltSocket);
+            read_file_in_ss(clientRequest.arg1, &cltSocket);
         } else if (clientRequest.requestType == WRITE_FILE) {
             printf("Write file: %s\n", clientRequest.arg1);
         } else if (clientRequest.requestType == GET_FILE_INFO) {
@@ -136,9 +145,6 @@ void* clientThread(void* arg) {
         }
 
         // Send the ack bit to client
-        AckPacket ack;
-        ack.errorCode = SUCCESS;
-        ack.ack = SUCCESS_ACK;
         if (send(cltSocket, &ack, sizeof(ack), 0) < 0) {
             printf("Error sending ack to client\n");
             exit(-1);
@@ -160,7 +166,7 @@ int main(int argc, char *argv[]) {
     strcpy(serverDetails.serverIP, MY_SRV_IP); // Replace with your actual IP
     serverDetails.port_client = atoi(argv[2]);
     serverDetails.port_nm = atoi(argv[3]);
-    serverDetails.online = true;
+    serverDetails.online = 1;
 
     printf("ONLINE : %s\n", ((serverDetails.online) ? "YES" : "NO"));
 
@@ -178,16 +184,20 @@ int main(int argc, char *argv[]) {
     server_addr.sin_port = htons(NM_NEW_SRV_PORT);
     server_addr.sin_addr.s_addr = inet_addr(NM_IP);
 
+    // Add accessible paths
+    serverDetails.num_paths = 0;
+    listFilesAndEmptyFolders(".", &serverDetails);
+
+    // Print the list of accessible paths
+    for (int i = 0; i < serverDetails.num_paths; i++) {
+        printf("%s\n", serverDetails.accessible_paths[i]);
+    }
+
     // Connect to the server
     if (connect(sock_fd, (struct sockaddr*) &server_addr, sizeof(server_addr)) < 0) {
         printf("Error connecting to server\n");
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
-
-    // Add accessible paths later
-    /* TBD
-        @Anika-Roy will be handling this
-     */
 
     // Send the server details to the NM
     if (send(sock_fd, &serverDetails, sizeof(ServerDetails), 0) < 0) {
