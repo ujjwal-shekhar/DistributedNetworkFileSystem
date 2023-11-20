@@ -80,5 +80,6 @@ typedef enum {
 #define NM_CLT_PORT 8080 // NM listens for clients
 #define NM_NEW_SRV_PORT 5049 // NM listens for new servers
 #define NM_COMM_SRV_PORT 5050 // NM communicates for servers
+#define NM_ALIVE_PORT 5048 // NM listens for alive messages
 
 #endif // CONSTANTS_H

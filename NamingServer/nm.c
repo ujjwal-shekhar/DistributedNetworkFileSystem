@@ -13,25 +13,32 @@ ServerDetails servers[MAX_SERVERS];             // List of servers
 sem_t servers_initialized;                      // Semaphore to wait for MIN_SERVERS to come alive before client requests begin
 
 int num_servers_running = 0;                    // Keep track of the number of servers running
-sem_t num_servers_running_mutex;                // Binary semaphore to lock the critical section    
+int num_servers_online = 0;                     // Keep track of the number of servers online
+sem_t num_servers_running_mutex;                // Binary semaphore to lock the critical section
+sem_t num_servers_online_mutex;                 // Binary semaphore to lock the critical section
+sem_t servers_ping_mutex[MAX_SERVERS];          // Binary semaphores to lock server last pinged
+
+struct timeval server_ping_time[MAX_SERVERS];   // Stores the last time the storage server was pinged
+
+int serverAliveSocket;                          // Socket to listen for server alive messages
 
 /**
  * @brief Handles communication with a client in a separate thread.
- * 
+ *
  * This function runs in a separate thread to handle communication with a client.
  * It receives client requests, identifies the appropriate storage server,
  * and delegates the request handling to the `handleClientRequest` function.
  * The client socket is used to communicate with the Network Manager (NM).
- * 
+ *
  * @param arg : Pointer to an integer representing the client socket.
  *              The client socket is extracted from this pointer and used for communication.
  *              After completion, the client socket is closed, and the thread slot is marked as available.
- * 
+ *
  * @note The function runs in an infinite loop until an error occurs during client request reception.
- * 
+ *
  */
 void* handleClientCommunication(void* arg) {
-    // Extract the client socket from this 
+    // Extract the client socket from this
     // We will use this exact socket to talk
     // to the NM
     int clientSocket = *((int*)arg);
@@ -71,43 +78,127 @@ void* handleClientCommunication(void* arg) {
 
 /**
  * @brief Performs server-alive checks in a separate thread.
- * 
+ *
  * This function is intended to run in a separate thread and perform
- * server-alive checks. It sends a "CHECK" packet to the server, receives
- * a "CHECK" packet along with the serverID, and repeats the process every
- * 10 seconds. The thread execution can be terminated by the server.
- * 
+ * server-alive checks. It checks if the server is online by checking
+ * whether the last ping received for the server was within a timeout
+ * interval. If the server is offline, it marks the server as offline
+ *
  * @param arg : Unused parameter, required by the pthread_create function.
- * 
+ *
  * @note The function runs in an infinite loop with a sleep of 10 seconds between iterations.
- * 
+ *
  * @return Always returns NULL.
  */
-void* aliveThreadAsk(void* arg) {
-    // Placeholder implementation for aliveThread
-    while (1) {
-        // Send "CHECK" packet to the server
-        // Receive "CHECK" packet + serverID from the server
-        // Sleep for 10 seconds
-        // sleep(10);
-        break;
+void* checkAlive(void* arg) {
+    struct timeval curr;
+    while(1) {
+        for (int i = 0; i < MAX_SERVERS; i++) {
+            sem_wait(&servers_ping_mutex[i]);
+            gettimeofday(&curr, NULL);
+            if (servers[i].online && (curr.tv_sec - server_ping_time[i].tv_sec) > 15) {
+                servers[i].online = false;
+                num_servers_online--;
+                LOG("Storage server disconnected", false);
+            }
+            sem_post(&servers_ping_mutex[i]);
+        }
+        sleep(10);
     }
     return NULL;
 }
 
 /**
+ * @brief Performs server-alive checks in a separate thread.
+ *
+ * This function is intended to run in a separate thread and perform
+ * server-alive checks. It first receives the serverID from the storage
+ * server and then enters an infinite loop to receive alive messages
+ * every 10 seconds and update the last ping time for the server.
+ *
+ * @param arg : Unused parameter, required by the pthread_create function.
+ *
+ * @note The function runs in an infinite loop where is waits to receive ALIVE
+ *
+ * @return Always returns NULL.
+ */
+void* aliveThreadAsk(void* arg) {
+    struct timeval curr;
+    int serverID = 0;
+    ssize_t bytes_read;
+    char buffer[10], printBuffer[100];
+    // Make the socket address struct
+    // Mostly obsolete since we don't need
+    // to bind this to anyone
+    struct sockaddr_in clientAddr;
+    socklen_t clientLen = sizeof(clientAddr);
+
+    // Send the pointer to the storage server address
+    // structure to get accepted
+    int storageServerSocket;
+    if (!acceptNewConnection(&storageServerSocket, &serverAliveSocket, &clientAddr, &clientLen)) {
+        return NULL; // Failed to connect
+    }
+    LOG("Connection established with storage server for alive messages", true);
+
+    // Get serverID from storage server
+    // Empty buffer
+    memset(buffer, '\0', sizeof(buffer));
+    bytes_read = recv(storageServerSocket, buffer, sizeof(buffer), 0);
+    if (bytes_read <= 0) {
+        LOG("Error receiving from storage server", false);
+        return NULL;
+    }
+    sscanf(buffer, "ID%d", &serverID);
+
+    while(1) {
+        memset(buffer, '\0', sizeof(buffer));
+        bytes_read = recv(storageServerSocket, buffer, sizeof(buffer), 0);
+        sem_wait(&servers_ping_mutex[serverID]);
+        gettimeofday(&curr, NULL);
+        if (bytes_read <= 0) {
+            // Got error or connection closed by client
+            if (bytes_read == 0) {
+                // Connection closed
+                if (servers[serverID].online){
+                    servers[serverID].online = false;
+                    num_servers_online--;
+                    memset(printBuffer, '\0', sizeof(printBuffer));
+                    sprintf(printBuffer, "Storage server %d disconnected", serverID);
+                    LOG(printBuffer, false);
+                }
+            } else {
+                LOG("Error receiving from storage server", false);
+            }
+            break;
+        }
+        else {
+            server_ping_time[serverID] = curr;
+            memset(printBuffer, '\0', sizeof(printBuffer));
+            sprintf(printBuffer, "Received alive message from storage server %d", serverID);
+            LOG(printBuffer, true);
+        }
+
+        sem_post(&servers_ping_mutex[serverID]);
+    }
+
+    close(storageServerSocket);
+    return NULL;
+}
+
+/**
  * @brief Listens to incoming storage server requests and handles server registration.
- * 
+ *
  * This function initializes server details, creates and configures the server socket, and enters
  * an infinite loop to listen for incoming connections. Upon accepting a connection, it receives
  * server details and registers the new server using the `registerNewServer` function.
  * After processing, it closes the server socket.
- * 
+ *
  * @param arg : Unused parameter (required for pthread_create).
- * 
+ *
  * @note The function runs indefinitely, listening for incoming storage server requests.
- * 
- */ 
+ *
+ */
 void* listenServerRequests(void* arg) {
     initializeServerDetails(servers);
 
@@ -117,8 +208,8 @@ void* listenServerRequests(void* arg) {
         LOG("Error creating socket", false);
         exit(EXIT_FAILURE);
     }
-    
-    // Initialize the port details 
+
+    // Initialize the port details
     // that we need to bind the listener (us) on
     struct sockaddr_in serverAddr;
     memset(&serverAddr, 0, sizeof(serverAddr));
@@ -126,18 +217,18 @@ void* listenServerRequests(void* arg) {
     serverAddr.sin_port = htons(NM_NEW_SRV_PORT);
     serverAddr.sin_addr.s_addr = INADDR_ANY;
 
-    // Bind the socket fd to the port 
+    // Bind the socket fd to the port
     if (bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
         LOG("Error binding socket", false);
         close(serverSocket);
         exit(EXIT_FAILURE);
     }
     LOG("Naming Server is bound on the NM_NEW_SRV_PORT", true);
-    
-    // Start queuing everything that is listened to 
+
+    // Start queuing everything that is listened to
     if (listen(serverSocket, MAX_LISTEN_BACKLOG) < 0) {
         LOG("Error listening for connections", false);
-        close(serverSocket); 
+        close(serverSocket);
         exit(EXIT_FAILURE);
     }
 
@@ -145,13 +236,13 @@ void* listenServerRequests(void* arg) {
     LOG("Naming Server is listening for SERVER connections", true);
 
     while (1) {
-        // Make the socket address struct 
+        // Make the socket address struct
         // Mostly obsolete since we don't need
         // to bind this to anyone
         struct sockaddr_in clientAddr;
         socklen_t clientLen = sizeof(clientAddr);
 
-        // Send the pointer to the storage server address 
+        // Send the pointer to the storage server address
         // structure to get accepted
         int storageServerSocket;
         if (!acceptNewConnection(&storageServerSocket, &serverSocket, &clientAddr, &clientLen)) {
@@ -159,7 +250,7 @@ void* listenServerRequests(void* arg) {
         }
         LOG("Connection established with storage server", true);
 
-        // ServerDetails struct to be populated by 
+        // ServerDetails struct to be populated by
         // receiving from the server.
         ServerDetails receivedServerDetails;
         if (!receiveServerDetails(&storageServerSocket, &receivedServerDetails)) {
@@ -287,19 +378,62 @@ void* listenClientRequests(void* arg) {
 }
 
 int main() {
-    // A semaphore will be initialized to 
-    // minus(NUM_INIT_SERVERS). Every time 
+    // A semaphore will be initialized to
+    // minus(NUM_INIT_SERVERS). Every time
     // a server is initialized in the listen server
     // connection requests, we will post here
-    // When it is finally zero, the program will 
+    // When it is finally zero, the program will
     // continue
     sem_init(&servers_initialized, 0, 0);
     sem_init(&num_servers_running_mutex, 0, 1);
+    sem_init(&num_servers_online_mutex, 0, 1);
+    for (int i = 0; i < MAX_SERVERS; i++) {
+        sem_init(&servers_ping_mutex[i], 0, 1);
+    }
+
+    struct timeval curr;
+    gettimeofday(&curr, NULL);
+    for (int i = 0; i < MAX_SERVERS; i++) {
+        server_ping_time[i] = curr;
+    }
 
     // Log that the NM file is running
     LOG("NM file is running", true);
 
-    // I will first spawn a thread to listen 
+    // Make a socket fd for the Alive Checker
+    serverAliveSocket = socket(SOCKET_FAMILY, SOCKET_TYPE, SOCKET_PROTOCOL);
+    if (serverAliveSocket < 0) {
+        LOG("Error creating socket", false);
+        exit(EXIT_FAILURE);
+    }
+
+    // Initialize the port details
+    // that we need to bind the listener (us) on
+    struct sockaddr_in serverAddr;
+    memset(&serverAddr, 0, sizeof(serverAddr));
+    serverAddr.sin_family = SOCKET_FAMILY;
+    serverAddr.sin_port = htons(NM_ALIVE_PORT);
+    serverAddr.sin_addr.s_addr = INADDR_ANY;
+
+    // Bind the socket fd to the port
+    if (bind(serverAliveSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
+        LOG("Error binding socket", false);
+        close(serverAliveSocket);
+        exit(EXIT_FAILURE);
+    }
+    LOG("Naming Server checks for alive servers on the NM_ALIVE_PORT", true);
+
+    // Start queuing everything that is listened to
+    if (listen(serverAliveSocket, MAX_LISTEN_BACKLOG) < 0) {
+        LOG("Error listening for connections", false);
+        close(serverAliveSocket);
+        exit(EXIT_FAILURE);
+    }
+
+    // Log that the client listener has started to listen
+    LOG("Naming Server is listening for Alive SERVER connections", true);
+
+    // Spawn a thread to listen
     // for incoming storage server requests
     pthread_t listenServerThreadId;
     if (pthread_create(&listenServerThreadId, NULL, listenServerRequests, NULL) != 0) {
@@ -309,6 +443,15 @@ int main() {
 
     // Log that the Server listener was spawned
     LOG("Server listener started", true);
+
+    pthread_t checkAliveThreadId;
+    if (pthread_create(&checkAliveThreadId, NULL, checkAlive, NULL) != 0) {
+        perror("Error creating checkAlive thread");
+        exit(EXIT_FAILURE);
+    }
+
+    // Log that the Server Alive checked was spawned
+    LOG("Server Alive checker started", true);
 
     // Wait for the servers to be initialized
     sem_wait(&servers_initialized);
@@ -330,6 +473,7 @@ int main() {
     // Close threads and perform cleanup
     pthread_cancel(listenServerThreadId);
     pthread_cancel(listenClientThreadId);
+    pthread_cancel(checkAliveThreadId);
     sem_destroy(&servers_initialized);
 
     return 0;
