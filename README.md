@@ -16,19 +16,36 @@ git clone link ./name_of_the_directory
 cd name_of_the_directory
 ```
 
-- Run the Makefile
+- Run the script
 ```bash
-make
+chmod +x clean_compile.sh
+./clean_compile.sh
 ```
 
 # Components
 ## Naming Server
+- Navigate to the directory where NM will start
+```bash
+./nm
+```
 
 ## Storage Servers
+- Navigate to the directory where server will start
+```bash
+./server <server_id> <NM_port> <CLT_port>
+```
 
 ## Clients
+- Navigate to the directory where server will start
+```bash
+./client
+```
 
 # Bibliography and Assumptions
-- ctrl-Z to exit a client
+- ctrl-Z to exit a client only.
+- Writing to a file is ended by a double enter.
+- Server ID is to be entered by the person that is inititializing the server.
+- Instead of asking for user accessible paths, the server will assume all the directories inside the directory that it is run is accessible by it.
+- All paths are unique.
 
 # Usage of AI tools
