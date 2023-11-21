@@ -607,3 +607,869 @@
 [+]: Server Details sent to client
 [+]: Forwarding NON-PRIVILEDGED request to client successful
 [-]: Error receiving client request
+[+]: NM file is running
+[+]: Naming Server checks for alive servers on the NM_ALIVE_PORT
+[+]: Naming Server is listening for Alive SERVER connections
+[+]: Server listener started
+[+]: Naming Server is bound on the NM_NEW_SRV_PORT
+[+]: Naming Server is listening for SERVER connections
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Server online: [0;31moffline[0m, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Server online: [0;31moffline[0m, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Server online: [0;31moffline[0m, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Server online: [0;31moffline[0m, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 2, Server port_nm: 6062, Server port_client: 5052, Server online: [0;31moffline[0m, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 2, Server port_nm: 6062, Server port_client: 5052, Server online: [0;31moffline[0m, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 3, Server port_nm: 6063, Server port_client: 5053, Server online: [0;31moffline[0m, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: All initial servers are running
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 3, Server port_nm: 6063, Server port_client: 5053, Server online: [0;31moffline[0m, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Client listener started
+[+]: Initialized client fds
+[+]: Created Naming server socket for client new clients
+[+]: Bound Naming server socket on NM_CLT_PORT
+[+]: Naming Server is listening for CLIENT connections
+[+]: Available slot found in client_fds
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 4, Server port_nm: 6064, Server port_client: 5054, Server online: [0;31moffline[0m, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 4, Server port_nm: 6064, Server port_client: 5054, Server online: [0;31moffline[0m, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[-]: Storage server 1 disconnected
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 0
+[-]: Storage server 0 disconnected
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 4
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Server online: [0;31moffline[0m, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Server online: [0;31moffline[0m, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Server online: [0;31moffline[0m, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Server online: [0;31moffline[0m, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 1
+[+]: NM file is running
+[+]: Naming Server checks for alive servers on the NM_ALIVE_PORT
+[+]: Naming Server is listening for Alive SERVER connections
+[+]: Server listener started
+[+]: Naming Server is bound on the NM_NEW_SRV_PORT
+[+]: Naming Server is listening for SERVER connections
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Server online: [0;31moffline[0m, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Server online: [0;31moffline[0m, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Server online: [0;31moffline[0m, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Server online: [0;31moffline[0m, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 2, Server port_nm: 6062, Server port_client: 5052, Server online: [0;31moffline[0m, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 2, Server port_nm: 6062, Server port_client: 5052, Server online: [0;31moffline[0m, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 3, Server port_nm: 6063, Server port_client: 5053, Server online: [0;31moffline[0m, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: All initial servers are running
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 3, Server port_nm: 6063, Server port_client: 5053, Server online: [0;31moffline[0m, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Client listener started
+[+]: Initialized client fds
+[+]: Created Naming server socket for client new clients
+[+]: Bound Naming server socket on NM_CLT_PORT
+[+]: Naming Server is listening for CLIENT connections
+[+]: Available slot found in client_fds
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 0
+[+]: NM file is running
+[+]: Naming Server checks for alive servers on the NM_ALIVE_PORT
+[+]: Naming Server is listening for Alive SERVER connections
+[+]: Server listener started
+[+]: Naming Server is bound on the NM_NEW_SRV_PORT
+[+]: Naming Server is listening for SERVER connections
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 0
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 2, Server port_nm: 6062, Server port_client: 5052, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 2, Server port_nm: 6062, Server port_client: 5052, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Received alive message from storage server 0
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 3, Server port_nm: 6063, Server port_client: 5053, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: All initial servers are running
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 3, Server port_nm: 6063, Server port_client: 5053, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Client listener started
+[+]: Initialized client fds
+[+]: Created Naming server socket for client new clients
+[+]: Bound Naming server socket on NM_CLT_PORT
+[+]: Naming Server is listening for CLIENT connections
+[+]: Available slot found in client_fds
+[+]: NM file is running
+[-]: Error binding socket
+[+]: NM file is running
+[+]: Naming Server checks for alive servers on the NM_ALIVE_PORT
+[+]: Naming Server is listening for Alive SERVER connections
+[+]: Server listener started
+[+]: Naming Server is bound on the NM_NEW_SRV_PORT
+[+]: Naming Server is listening for SERVER connections
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 2, Server port_nm: 6062, Server port_client: 5052, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 2, Server port_nm: 6062, Server port_client: 5052, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 3, Server port_nm: 6063, Server port_client: 5053, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: All initial servers are running
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 3, Server port_nm: 6063, Server port_client: 5053, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Client listener started
+[+]: Initialized client fds
+[+]: Created Naming server socket for client new clients
+[+]: Bound Naming server socket on NM_CLT_PORT
+[+]: Naming Server is listening for CLIENT connections
+[+]: Available slot found in client_fds
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 4, Server port_nm: 6064, Server port_client: 5054, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 4, Server port_nm: 6064, Server port_client: 5054, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Accepted connection from server
+[+]: Available slot found in client_fds
+[+]: Client communication started
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 0
+[+]: Received Client Request
+[+]: Found storage server 0 for path /lmai.txt
+[[0;32m+[0m]: Client ID: -1, Request Type: 5, Num Args: 1, Arg1: /lmai.txt, Arg2: 
+[+]: Request Type : NON-PRIVILEDGED
+[+]: Sending a connection acknowledgement
+[+]: Connection acknowledgement succeeded
+[+]: Server Details sent to client
+[+]: Forwarding NON-PRIVILEDGED request to client successful
+[-]: Error receiving client request
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Accepted connection from server
+[+]: Available slot found in client_fds
+[+]: Client communication started
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 4
+[+]: Received Client Request
+[+]: Found storage server -1 for path /test/testing123.txt
+[-]: Failed to process client request
+[+]: Sending a connection acknowledgement
+[+]: Connection acknowledgement succeeded
+[+]: Received Client Request
+[+]: Found storage server -1 for path /test/testing123.txt
+[-]: Failed to process client request
+[+]: Sending a connection acknowledgement
+[+]: Connection acknowledgement succeeded
+[+]: Received Client Request
+[+]: Found storage server -1 for path /test/testing123.txt
+[-]: Failed to process client request
+[+]: Sending a connection acknowledgement
+[+]: NM file is running
+[+]: Naming Server checks for alive servers on the NM_ALIVE_PORT
+[+]: Naming Server is listening for Alive SERVER connections
+[+]: Server listener started
+[+]: Naming Server is bound on the NM_NEW_SRV_PORT
+[+]: Naming Server is listening for SERVER connections
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 2, Server port_nm: 6062, Server port_client: 5052, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 2, Server port_nm: 6062, Server port_client: 5052, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Received alive message from storage server 0
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 3, Server port_nm: 6063, Server port_client: 5053, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: All initial servers are running
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 3, Server port_nm: 6063, Server port_client: 5053, Num Paths accessible by server: 2
+[+]: Client listener started
+[+]: Initialized client fds
+[+]: Connection established with storage server for alive messages
+[+]: Created Naming server socket for client new clients
+[+]: Bound Naming server socket on NM_CLT_PORT
+[+]: Naming Server is listening for CLIENT connections
+[+]: Available slot found in client_fds
+[+]: Received alive message from storage server 1
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 4, Server port_nm: 6064, Server port_client: 5054, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 4, Server port_nm: 6064, Server port_client: 5054, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 1
+[+]: Accepted connection from server
+[+]: Available slot found in client_fds
+[+]: Client communication started
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 1
+[+]: Received Client Request
+[+]: Found storage server -1 for path /dir1/
+[-]: Failed to process client request
+[+]: Sending a connection acknowledgement
+[+]: Connection acknowledgement succeeded
+[+]: Received Client Request
+[+]: Found storage server -1 for path /dir1/
+[-]: Failed to process client request
+[+]: Sending a connection acknowledgement
+[+]: Connection acknowledgement succeeded
+[+]: Received Client Request
+[+]: Found storage server -1 for path /dir1/
+[-]: Failed to process client request
+[+]: Sending a connection acknowledgement
+[+]: NM file is running
+[+]: Naming Server checks for alive servers on the NM_ALIVE_PORT
+[+]: Naming Server is listening for Alive SERVER connections
+[+]: Server listener started
+[+]: Naming Server is bound on the NM_NEW_SRV_PORT
+[+]: Naming Server is listening for SERVER connections
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 2, Server port_nm: 6062, Server port_client: 5052, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 2, Server port_nm: 6062, Server port_client: 5052, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 3, Server port_nm: 6063, Server port_client: 5053, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: All initial servers are running
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 3, Server port_nm: 6063, Server port_client: 5053, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Client listener started
+[+]: Initialized client fds
+[+]: Created Naming server socket for client new clients
+[+]: Bound Naming server socket on NM_CLT_PORT
+[+]: Naming Server is listening for CLIENT connections
+[+]: Available slot found in client_fds
+[+]: Received alive message from storage server 0
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 4, Server port_nm: 6064, Server port_client: 5054, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 4, Server port_nm: 6064, Server port_client: 5054, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 4
+[+]: Accepted connection from server
+[+]: Available slot found in client_fds
+[+]: Client communication started
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received Client Request
+[+]: Found storage server -1 for path 
+[-]: Failed to process client request
+[+]: Sending a connection acknowledgement
+[+]: Connection acknowledgement succeeded
+[+]: Received Client Request
+[+]: Found storage server -1 for path 
+[-]: Failed to process client request
+[+]: Sending a connection acknowledgement
+[+]: NM file is running
+[+]: Naming Server checks for alive servers on the NM_ALIVE_PORT
+[+]: Naming Server is listening for Alive SERVER connections
+[+]: Server listener started
+[+]: Naming Server is bound on the NM_NEW_SRV_PORT
+[+]: Naming Server is listening for SERVER connections
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 2, Server port_nm: 6062, Server port_client: 5052, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 2, Server port_nm: 6062, Server port_client: 5052, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 3, Server port_nm: 6063, Server port_client: 5053, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: All initial servers are running
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 3, Server port_nm: 6063, Server port_client: 5053, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Client listener started
+[+]: Initialized client fds
+[+]: Created Naming server socket for client new clients
+[+]: Bound Naming server socket on NM_CLT_PORT
+[+]: Naming Server is listening for CLIENT connections
+[+]: Available slot found in client_fds
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 4, Server port_nm: 6064, Server port_client: 5054, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 4, Server port_nm: 6064, Server port_client: 5054, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Accepted connection from server
+[+]: Available slot found in client_fds
+[+]: Client communication started
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received Client Request
+[+]: Found storage server 4 for path /
+[[0;32m+[0m]: Client ID: -1, Request Type: 7, Num Args: 1, Arg1: /, Arg2: 
+[+]: Request Type : NON-PRIVILEDGED
+[+]: Sending a connection acknowledgement
+[+]: Sent path to client
+[+]: Sent path to client
+[+]: Sent path to client
+[+]: Sent path to client
+[+]: Sent path to client
+[+]: Sent path to client
+[+]: Sent path to client
+[+]: Sent path to client
+[+]: Sent path to client
+[+]: Sent path to client
+[+]: Sending a connection acknowledgement
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 0
+[+]: Received Client Request
+[+]: Found storage server 4 for path /
+[[0;32m+[0m]: Client ID: -1, Request Type: 7, Num Args: 1, Arg1: /, Arg2: 
+[+]: Request Type : NON-PRIVILEDGED
+[+]: Sending a connection acknowledgement
+[+]: NM file is running
+[+]: Naming Server checks for alive servers on the NM_ALIVE_PORT
+[+]: Naming Server is listening for Alive SERVER connections
+[+]: Server listener started
+[+]: Naming Server is bound on the NM_NEW_SRV_PORT
+[+]: Naming Server is listening for SERVER connections
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 2, Server port_nm: 6062, Server port_client: 5052, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 2, Server port_nm: 6062, Server port_client: 5052, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 3, Server port_nm: 6063, Server port_client: 5053, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: All initial servers are running
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 3, Server port_nm: 6063, Server port_client: 5053, Num Paths accessible by server: 2
+[+]: Client listener started
+[+]: Connection established with storage server for alive messages
+[+]: Initialized client fds
+[+]: Created Naming server socket for client new clients
+[+]: Bound Naming server socket on NM_CLT_PORT
+[+]: Naming Server is listening for CLIENT connections
+[+]: Available slot found in client_fds
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 4, Server port_nm: 6064, Server port_client: 5054, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 4, Server port_nm: 6064, Server port_client: 5054, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[-]: Storage server 0 disconnected
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 4
+[+]: NM file is running
+[+]: Naming Server checks for alive servers on the NM_ALIVE_PORT
+[+]: Naming Server is listening for Alive SERVER connections
+[+]: Server listener started
+[+]: Naming Server is bound on the NM_NEW_SRV_PORT
+[+]: Naming Server is listening for SERVER connections
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 0, Server port_nm: 6060, Server port_client: 5050, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 1, Server port_nm: 6061, Server port_client: 5051, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 2, Server port_nm: 6062, Server port_client: 5052, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 2, Server port_nm: 6062, Server port_client: 5052, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 3, Server port_nm: 6063, Server port_client: 5053, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: All initial servers are running
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 3, Server port_nm: 6063, Server port_client: 5053, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Client listener started
+[+]: Initialized client fds
+[+]: Created Naming server socket for client new clients
+[+]: Bound Naming server socket on NM_CLT_PORT
+[+]: Naming Server is listening for CLIENT connections
+[+]: Available slot found in client_fds
+[+]: Connection established with storage server
+[+]: Received server details
+[+]: Received server details
+[+]: Registering server
+[[0;32m+[0m]: Server ID: 4, Server port_nm: 6064, Server port_client: 5054, Num Paths accessible by server: 2
+[+]: Sent ACK packet to storage server
+[+]: Server registered
+[[0;32m+[0m]: Server ID: 4, Server port_nm: 6064, Server port_client: 5054, Num Paths accessible by server: 2
+[+]: Connection established with storage server for alive messages
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 4
+[+]: Received alive message from storage server 0
+[+]: Received alive message from storage server 1
+[+]: Received alive message from storage server 2
+[+]: Received alive message from storage server 3
+[+]: Received alive message from storage server 4

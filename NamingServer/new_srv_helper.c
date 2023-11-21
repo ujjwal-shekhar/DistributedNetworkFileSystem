@@ -77,6 +77,9 @@ bool registerNewServer(
             (*num_servers_running)++;
         sem_post(num_servers_running_mutex);
 
+        // Spawn an alive thread
+        spawnAliveThread(aliveThreadAsk);
+
         // If all initial servers are running, post to the servers_initialized semaphore
         if (*num_servers_running == NUM_INIT_SERVERS) {
             LOG("All initial servers are running", true);
@@ -85,9 +88,6 @@ bool registerNewServer(
         
         LOG("Server registered", true);
         LOG_SERVER_DETAILS(receivedServerDetails);
-
-        // Spawn an alive thread
-        spawnAliveThread(aliveThreadAsk);
     }
     return true;
 }

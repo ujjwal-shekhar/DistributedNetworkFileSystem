@@ -16,12 +16,13 @@
 #define MAX_PATH_LEN 1024
 #define MAX_PATHS 1000
 #define MAX_ACK_EXTRA_INFO 100
-#define NUM_INIT_SERVERS 1
+#define NUM_INIT_SERVERS 4
 #define MAX_CHUNK_SIZE 1024
 #define NUM_CHARS 256
 #define MAX_CACHE_SIZE 5
 #define ROLLING_PRIME 31
 #define ROLLING_MODULO 1000000007
+#define MAX_REDUN 2
 
 // Timeout intervals
 #define MAX_NM_TO_CLT_TIMEOUT 30
@@ -85,6 +86,7 @@ typedef enum {
 
 // Standard Ports for NM
 #define NM_CLT_PORT 8080 // NM listens for clients
+#define NM_ALIVE_PORT 5048 // NM listens for alive messages
 #define NM_NEW_SRV_PORT 5049 // NM listens for new servers
 #define NM_COMM_SRV_PORT 4050 // NM communicates for servers
 

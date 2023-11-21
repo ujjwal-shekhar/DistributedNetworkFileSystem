@@ -34,12 +34,12 @@
     #define LOG_SERVER_DETAILS(server) do { \
         FILE *fptr = fopen(NM_LOG_FILE, "a"); \
         if (fptr) { \
-            fprintf(fptr, "[%s]: Server ID: %d, Server port_nm: %d, Server port_client: %d, Server online: %s, Num Paths accessible by server: %d\n", \
-                GREENCOLOR("+"), server->serverID, server->port_nm, server->port_client, (server->online ? GREENCOLOR("online") : REDCOLOR("offline")), server->num_paths); \
+            fprintf(fptr, "[%s]: Server ID: %d, Server port_nm: %d, Server port_client: %d, Num Paths accessible by server: %d\n", \
+                GREENCOLOR("+"), server->serverID, server->port_nm, server->port_client, server->num_paths); \
             fclose(fptr); \
         } \
-        printf("[%s\e[0m]: Server ID: %d\n     Server port_nm: %d\n     Server port_client: %d\n     Server online: %s\n     Paths accessible by server: %d\n", \
-            GREENCOLOR("+"), server->serverID, server->port_nm, server->port_client, (server->online ? GREENCOLOR("online") : REDCOLOR("offline")), server->num_paths); \
+        printf("[%s\e[0m]: Server ID: %d\n     Server port_nm: %d\n     Server port_client: %d\n     Paths accessible by server: %d\n", \
+            GREENCOLOR("+"), server->serverID, server->port_nm, server->port_client, server->num_paths); \
         for (int i = 0; i < server->num_paths; i++) { \
             printf("     %s\n", server->accessible_paths[i]); \
         }\

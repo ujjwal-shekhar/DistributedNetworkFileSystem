@@ -128,4 +128,18 @@ typedef struct rwlock {
     sem_t writeLock;
 } rwlock;
 
+/**
+ * @brief FilePacket struct to send details
+ *
+ * @param chunk : informatino to send
+ * @param lastChunk : True, if this is the last chunk. Stop transmitting data.
+ *
+ */
+typedef struct RedundantServerInfo {
+    int active[MAX_REDUN];
+    int inactive[MAX_SERVERS];
+    int num_active;
+    int num_inactive;
+} RedundantServerInfo;
+
 #endif // STRUCTS_H

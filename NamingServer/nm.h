@@ -65,6 +65,24 @@ void spawnAliveThread(void* aliveThreadAsk);
 // Function to find the storage server corresponding to the given address
 int findStorageServer(char* address, trienode* root, LRU* lru);
 
+// Function to assign a redundant storage server
+void assignRedundantServer(int serverID);
+
+// Function to change activity of redundant storage server
+void changeRedundantServerActivity(int serverID, int activeServerID);
+
+// Function to remove inactive redundant storage server
+void removeInactiveRedundantServer(int serverID, int inactiveServerID);
+
+// Function to figure out which all servers use the particular server as redundant
+void checkWhereRedundant(int serverID);
+
+// Function to find out where all the particular server is present as inactive
+void findInactiveRedundant(int serverID);
+
+// Function to get new Redundant in case some are down after respawn
+void respawnGetNewRedundant(int serverID);
+
 // Helper and manager functions for the trie search
 trienode* createnode();
 void trieinsert(trienode** root, char* signedtext, int serverID);

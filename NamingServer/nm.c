@@ -10,12 +10,18 @@ int server_fds[MAX_SERVERS];                    // Make a list of server fds
 pthread_t clientThreads[MAX_CLIENTS];           // List of client threads
 pthread_t serverNMThreads[MAX_CLIENTS];         // List of client <-> NM interaction threads
 ServerDetails servers[MAX_SERVERS];             // List of servers
+bool already_seen_servers[MAX_SERVERS];         // List of servers that have already been seen
+RedundantServerInfo redundantServers[MAX_SERVERS]; // List of redundant servers
 sem_t servers_initialized;                      // Semaphore to wait for MIN_SERVERS to come alive before client requests begin
 trienode * root = NULL;                         // Global trie
 LRU lru[MAX_CACHE_SIZE];                        // LRU cache             
 
 int num_servers_running = 0;                    // Keep track of the number of servers running
-sem_t num_servers_running_mutex;                // Binary semaphore to lock the critical section    
+int num_servers_online = 0;                     // Keep track of the number of servers online
+sem_t num_servers_running_mutex;                // Binary semaphore to lock the critical section
+sem_t num_servers_online_mutex;                 // Binary semaphore to lock the critical section
+
+int serverAliveSocket;                          // Socket to listen for server alive messages
 
 /**
  * @brief Handles communication with a client in a separate thread.
@@ -81,29 +87,169 @@ void* handleClientCommunication(void* arg) {
     pthread_exit(NULL);
 }
 
+void checkWhereRedundant(int serverID) {
+    for (int i = 0; i < MAX_SERVERS; i++) {
+        if (servers[i].online) {
+            for (int j = 0; j < redundantServers[i].num_active; j++) {
+                if (redundantServers[i].active[j] == serverID) {
+                    changeRedundantServerActivity(i, serverID);
+                    assignRedundantServer(i);
+                }
+            }
+        }
+    }
+}
+
+void respawnGetNewRedundant(int serverID) {
+    int downServers[10];
+    int num_down = 0;
+    for (int i = 0; i < redundantServers[serverID].num_active; i++) {
+        if (!servers[redundantServers[serverID].active[i]].online) {
+            downServers[num_down++] = redundantServers[serverID].active[i];
+        }
+    }
+
+    for (int i = 0; i < num_down; i++) {
+        changeRedundantServerActivity(serverID, downServers[i]);
+        assignRedundantServer(serverID);
+    }
+}
+
+void findInactiveRedundant(int serverID) {
+    for (int i = 0; i < MAX_SERVERS; i++) {
+        for (int j = 0; j < redundantServers[i].num_inactive; j++) {
+            if (redundantServers[i].inactive[j] == serverID) {
+                removeInactiveRedundantServer(i, serverID);
+            }
+        }
+    }
+}
+
+void assignRedundantServer(int serverID) {
+    if (redundantServers[serverID].num_active == MAX_REDUN) return;
+    int availableServers[10];
+    int num_available = 0;
+    for (int i = 0; i < MAX_SERVERS; i++) {
+        if (servers[i].online && i != serverID) {
+            int flag = 1;
+            for (int j = 0; j < redundantServers[serverID].num_active; j++) {
+                if (redundantServers[serverID].active[j] == i) {
+                    flag = 0;
+                    break;
+                }
+            }
+            if (flag) {
+                availableServers[num_available++] = i;
+            }
+        }
+    }
+    int num_to_choose = MAX_REDUN - redundantServers[serverID].num_active;
+    for (int i = 0; i < num_to_choose; i++) {
+        int index = rand() % num_available;
+        redundantServers[serverID].active[redundantServers[serverID].num_active++] = availableServers[index];
+        for (int j = index; j < num_available - 1; j++) {
+            availableServers[j] = availableServers[j + 1];
+        }
+        num_available--;
+    }
+}
+
+
+void changeRedundantServerActivity(int serverID, int activeServerID) {
+    for (int i = 0; i < redundantServers[serverID].num_active; i++) {
+        if (redundantServers[serverID].active[i] == activeServerID) {
+            for (int j = i; j < redundantServers[serverID].num_active - 1; j++) {
+                redundantServers[serverID].active[j] = redundantServers[serverID].active[j + 1];
+            }
+            redundantServers[serverID].num_active--;
+            break;
+        }
+    }
+    redundantServers[serverID].inactive[redundantServers[serverID].num_inactive++] = activeServerID;
+}
+
+void removeInactiveRedundantServer(int serverID, int inactiveServerID) {
+    for (int i = 0; i < redundantServers[serverID].num_inactive; i++) {
+        if (redundantServers[serverID].inactive[i] == inactiveServerID) {
+            for (int j = i; j < redundantServers[serverID].num_inactive - 1; j++) {
+                redundantServers[serverID].inactive[j] = redundantServers[serverID].inactive[j + 1];
+            }
+            redundantServers[serverID].num_inactive--;
+            break;
+        }
+    }
+}
+
 /**
  * @brief Performs server-alive checks in a separate thread.
- * 
+ *
  * This function is intended to run in a separate thread and perform
- * server-alive checks. It sends a "CHECK" packet to the server, receives
- * a "CHECK" packet along with the serverID, and repeats the process every
- * 10 seconds. The thread execution can be terminated by the server.
- * 
+ * server-alive checks. It first receives the serverID from the storage
+ * server and then enters an infinite loop to receive alive messages
+ * every 10 seconds and update the last ping time for the server.
+ *
  * @param arg : Unused parameter, required by the pthread_create function.
- * 
- * @note The function runs in an infinite loop with a sleep of 10 seconds between iterations.
- * 
+ *
+ * @note The function runs in an infinite loop where is waits to receive ALIVE
+ *
  * @return Always returns NULL.
  */
 void* aliveThreadAsk(void* arg) {
-    // Placeholder implementation for aliveThread
-    while (1) {
-        // Send "CHECK" packet to the server
-        // Receive "CHECK" packet + serverID from the server
-        // Sleep for 10 seconds
-        // sleep(10);
-        break;
+    int serverID = 0;
+    ssize_t bytes_read;
+    char buffer[10], printBuffer[100];
+    // Make the socket address struct
+    // Mostly obsolete since we don't need
+    // to bind this to anyone
+    struct sockaddr_in clientAddr;
+    socklen_t clientLen = sizeof(clientAddr);
+
+    // Send the pointer to the storage server address
+    // structure to get accepted
+    int storageServerSocket;
+    if (!acceptNewConnection(&storageServerSocket, &serverAliveSocket, &clientAddr, &clientLen)) {
+        return NULL; // Failed to connect
     }
+    LOG("Connection established with storage server for alive messages", true);
+
+    // Get serverID from storage server
+    // Empty buffer
+    memset(buffer, '\0', sizeof(buffer));
+    bytes_read = recv(storageServerSocket, buffer, sizeof(buffer), 0);
+    if (bytes_read <= 0) {
+        LOG("Error receiving from storage server", false);
+        return NULL;
+    }
+    sscanf(buffer, "ID%d", &serverID);
+
+    while(1) {
+        memset(buffer, '\0', sizeof(buffer));
+        bytes_read = recv(storageServerSocket, buffer, sizeof(buffer), 0);
+        if (bytes_read <= 0) {
+            // Got error or connection closed by client
+            if (bytes_read == 0) {
+                // Connection closed
+                if (servers[serverID].online){
+                    servers[serverID].online = false;
+                    checkWhereRedundant(serverID);
+                    num_servers_online--;
+                    memset(printBuffer, '\0', sizeof(printBuffer));
+                    sprintf(printBuffer, "Storage server %d disconnected", serverID);
+                    LOG(printBuffer, false);
+                }
+            } else {
+                LOG("Error receiving from storage server", false);
+            }
+            break;
+        }
+        else {
+            memset(printBuffer, '\0', sizeof(printBuffer));
+            sprintf(printBuffer, "Received alive message from storage server %d", serverID);
+            LOG(printBuffer, true);
+        }
+    }
+
+    close(storageServerSocket);
     return NULL;
 }
 
@@ -156,6 +302,8 @@ void* listenServerRequests(void* arg) {
     // Log that the client listener has started to listen
     LOG("Naming Server is listening for SERVER connections", true);
 
+    bool init_servers_received = false;
+
     while (1) {
         // Make the socket address struct 
         // Mostly obsolete since we don't need
@@ -179,7 +327,6 @@ void* listenServerRequests(void* arg) {
             continue; // Failed to receive server details
         }
         LOG("Received server details", true);
-        printf("ONLINE : %d : %s\n", receivedServerDetails.serverID, ((receivedServerDetails.online) ? "YES" : "NO"));
 
         if (!registerNewServer(
             servers,
@@ -197,6 +344,27 @@ void* listenServerRequests(void* arg) {
             continue;
         }
 
+        if (init_servers_received) {
+            if (servers[receivedServerDetails.serverID].online) {
+                if (already_seen_servers[receivedServerDetails.serverID]) {
+                    respawnGetNewRedundant(receivedServerDetails.serverID);
+                    findInactiveRedundant(receivedServerDetails.serverID);
+                }
+                else {
+                    assignRedundantServer(receivedServerDetails.serverID);
+                }
+            }
+        }
+        else if (num_servers_running == NUM_INIT_SERVERS) {
+            for (int i = 0; i < MAX_SERVERS; i++) {
+                if (servers[i].online) {
+                    assignRedundantServer(i);
+                }
+            }
+            init_servers_received = true;
+        }
+
+        already_seen_servers[receivedServerDetails.serverID] = true;
     }
 
     closeServerSocket(&serverSocket);
@@ -204,6 +372,26 @@ void* listenServerRequests(void* arg) {
     return NULL;
 }
 
+void* printRedundantServers(void* arg) {
+    while (1) {
+        for (int i = 0; i < MAX_SERVERS; i++) {
+            if (servers[i].online) {
+                printf("Server %d :\nActive : ", i);
+                for (int j = 0; j < redundantServers[i].num_active; j++) {
+                    printf("%d ", redundantServers[i].active[j]);
+                }
+                printf("\n");
+                printf("Inactive : ");
+                for (int j = 0; j < redundantServers[i].num_inactive; j++) {
+                    printf("%d ", redundantServers[i].inactive[j]);
+                }
+                printf("\n");
+            }
+        }
+        sleep(20);
+    }
+    return NULL;
+}
 
 void* listenClientRequests(void* arg) {
     // Placeholder implementation for listening to client requests
@@ -308,6 +496,20 @@ int main() {
     // continue
     sem_init(&servers_initialized, 0, 0);
     sem_init(&num_servers_running_mutex, 0, 1);
+    sem_init(&num_servers_online_mutex, 0, 1);
+
+    srand(time(NULL));
+
+    for (int i = 0; i < MAX_SERVERS; i++) {
+        already_seen_servers[i] = false;
+    }
+
+    for (int i = 0; i < MAX_SERVERS; i++) {
+        memset(redundantServers[i].active, -1, sizeof(redundantServers[i].active));
+        memset(redundantServers[i].inactive, -1, sizeof(redundantServers[i].inactive));
+        redundantServers[i].num_active = 0;
+        redundantServers[i].num_inactive = 0;
+    }
 
     // Initialize the cache
     for (int i = 0; i < MAX_CACHE_SIZE; i++) {
@@ -319,7 +521,40 @@ int main() {
     // Log that the NM file is running
     LOG("NM file is running", true);
 
-    // I will first spawn a thread to listen 
+    // Make a socket fd for the Alive Checker
+    serverAliveSocket = socket(SOCKET_FAMILY, SOCKET_TYPE, SOCKET_PROTOCOL);
+    if (serverAliveSocket < 0) {
+        LOG("Error creating socket", false);
+        exit(EXIT_FAILURE);
+    }
+
+    // Initialize the port details
+    // that we need to bind the listener (us) on
+    struct sockaddr_in serverAddr;
+    memset(&serverAddr, 0, sizeof(serverAddr));
+    serverAddr.sin_family = SOCKET_FAMILY;
+    serverAddr.sin_port = htons(NM_ALIVE_PORT);
+    serverAddr.sin_addr.s_addr = INADDR_ANY;
+
+    // Bind the socket fd to the port
+    if (bind(serverAliveSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
+        LOG("Error binding socket", false);
+        close(serverAliveSocket);
+        exit(EXIT_FAILURE);
+    }
+    LOG("Naming Server checks for alive servers on the NM_ALIVE_PORT", true);
+
+    // Start queuing everything that is listened to
+    if (listen(serverAliveSocket, MAX_LISTEN_BACKLOG) < 0) {
+        LOG("Error listening for connections", false);
+        close(serverAliveSocket);
+        exit(EXIT_FAILURE);
+    }
+
+    // Log that the client listener has started to listen
+    LOG("Naming Server is listening for Alive SERVER connections", true);
+
+    // Spawn a thread to listen
     // for incoming storage server requests
     pthread_t listenServerThreadId;
     if (pthread_create(&listenServerThreadId, NULL, listenServerRequests, NULL) != 0) {
@@ -333,8 +568,11 @@ int main() {
     // Wait for the servers to be initialized
     sem_wait(&servers_initialized);
 
-    // Log that the Client listener was spawned
-    LOG("Client listener started", true);
+    pthread_t printRedundantServersThreadId;
+    if (pthread_create(&printRedundantServersThreadId, NULL, printRedundantServers, NULL) != 0) {
+        perror("Error creating printRedundantServers thread");
+        exit(EXIT_FAILURE);
+    }
 
     // Spawn a thread to forever listen for new
     // client requests.
@@ -343,6 +581,9 @@ int main() {
         perror("Error creating listenClientRequests thread");
         exit(EXIT_FAILURE);
     }
+
+    // Log that the Client listener was spawned
+    LOG("Client listener started", true);
 
     // Wait for user input to exit
     getchar();

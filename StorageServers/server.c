@@ -12,14 +12,46 @@ sem_t serverDetails_mutex;          // Binary semaphore to atomically carry out 
 rwlock rw_locks[MAX_PATHS];         // Reader writer lock to protect each file
 
 void* aliveThreadReply(void* arg) {
-    // Placeholder implementation for aliveThread
-    while (1) {
-        // Receive "CHECK" packet from the server
-        // Respond with "CHECK" packet + serverID
-        // Sleep for 10 seconds
-        // sleep(10);
-        break;
+    char buffer[10];
+
+    // Create a socket
+    int sock_fd = socket(SOCKET_FAMILY, SOCKET_TYPE, SOCKET_PROTOCOL);
+    if (sock_fd < 0) {
+        printf("Error creating socket\n");
+        exit(-1);
     }
+
+    // Create a sockaddr_in struct for the server
+    struct sockaddr_in server_addr;
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = SOCKET_FAMILY;
+    server_addr.sin_port = htons(NM_ALIVE_PORT);
+    server_addr.sin_addr.s_addr = inet_addr(NM_IP);
+
+    // Connect to the server
+    if (connect(sock_fd, (struct sockaddr*) &server_addr, sizeof(server_addr)) < 0) {
+        printf("Error connecting to server\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Send the serverID to the NM
+    sprintf(buffer, "ID%d", serverDetails.serverID);
+    if (send(sock_fd, buffer, strlen(buffer), 0) < 0) {
+        perror("Error sending serverID to NM");
+        exit(EXIT_FAILURE);
+    }
+
+    // Keep sending "ALIVE" to the NM
+    // after every 10 seconds
+    while(1) {
+        if (send(sock_fd, "ALIVE", strlen("ALIVE"), 0) < 0) {
+            perror("Error sending ALIVE to NM");
+            exit(EXIT_FAILURE);
+        }
+        sleep(10);
+    }
+
+    close(sock_fd);
     return NULL;
 }
 
