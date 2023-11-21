@@ -64,4 +64,16 @@ void spawnAliveThread(void* aliveThreadAsk);
 // Function to find the storage server corresponding to the given address
 int findStorageServer(const char* address, ServerDetails* servers);
 
+// Function to assign a redundant storage server
+void assignRedundantServer(int serverID);
+
+// Function to change activity of redundant storage server
+void changeRedundantServerActivity(int serverID, int activeServerID);
+
+// Function to remove inactive redundant storage server
+void removeInactiveRedundantServer(int serverID, int inactiveServerID);
+
+// Function to figure out which all servers use the particular server as redundant
+void checkWhereRedundant(int serverID);
+
 #endif // NM_H
