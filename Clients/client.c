@@ -63,7 +63,9 @@ bool isValidRequest(char *request, ClientRequest *clientRequest) {
     } else if (strcmp(token, DELETEDIR) == 0) {
         clientRequest->requestType = DELETE_DIR; // DELETE_DIR
     } else if (strcmp(token, GETINFO) == 0) {
-        clientRequest->requestType = GET_FILE_INFO; // DELETE_DIR
+        clientRequest->requestType = GET_FILE_INFO; // GET_FILE_INFO
+    } else if (strcmp(token, LISTALL) == 0) {
+        clientRequest->requestType = LIST_ALL; // DELETE_DIR
     } else {
         return false;
     }
@@ -89,7 +91,8 @@ bool isValidRequest(char *request, ClientRequest *clientRequest) {
     }
 
     // Return true if the number of arguments is valid
-    return (clientRequest->num_args == 2 || clientRequest->num_args == 1);
+    return (clientRequest->num_args == 2 || clientRequest->num_args == 1 || 
+         (((clientRequest->requestType == LIST_ALL) && (clientRequest->num_args == 0))));
 }
 
 
@@ -293,10 +296,10 @@ int main() {
 
             close(clt_srv_fd);
 
-            // printf("Only 1 interactive process allowed with a Storage Server\n");
+            printf("Only 1 interactive process allowed with a Storage Server\n");
 
             // exit(EXIT_SUCCESS);
-            // break;
+            break;
         }
     }
 

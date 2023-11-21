@@ -39,6 +39,7 @@
 #define DELETEFILE "DELETE_FILE"
 #define DELETEDIR "DELETE_DIR"
 #define GETINFO "GET_INFO"
+#define LISTALL "LIST_ALL"
 
 // Enum for Request type
 typedef enum {
@@ -51,7 +52,8 @@ typedef enum {
     /* Non-priviledged */
     GET_FILE_INFO,
     READ_FILE,
-    WRITE_FILE
+    WRITE_FILE,
+    LIST_ALL
 } RequestType;
 
 // Enum for error codes
@@ -84,6 +86,6 @@ typedef enum {
 // Standard Ports for NM
 #define NM_CLT_PORT 8080 // NM listens for clients
 #define NM_NEW_SRV_PORT 5049 // NM listens for new servers
-#define NM_COMM_SRV_PORT 5050 // NM communicates for servers
+#define NM_COMM_SRV_PORT 4050 // NM communicates for servers
 
 #endif // CONSTANTS_H

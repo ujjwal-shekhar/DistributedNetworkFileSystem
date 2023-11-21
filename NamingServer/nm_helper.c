@@ -215,7 +215,8 @@ bool handleClientRequest(int* clientSocket, ClientRequest* clientRequest, int ss
             if (
                 clientRequest->requestType == READ_FILE ||
                 clientRequest->requestType == WRITE_FILE ||
-                clientRequest->requestType == GET_FILE_INFO
+                clientRequest->requestType == GET_FILE_INFO ||
+                clientRequest->requestType == LIST_ALL
             ) {
                 LOG("Request Type : NON-PRIVILEDGED", true);
                 if (!sendConnectionAcknowledgment(clientSocket, CNNCT_TO_SRV_ACK, SUCCESS)) {

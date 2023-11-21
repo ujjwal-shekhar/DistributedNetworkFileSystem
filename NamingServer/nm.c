@@ -64,6 +64,11 @@ void* handleClientCommunication(void* arg) {
 
         if ((ss_num < 0) || (!handleClientRequest(&clientSocket, &clientRequest, ss_num, servers, root))) {
             LOG("Failed to process client request", false);
+            if (!sendConnectionAcknowledgment(&clientSocket, FAILURE_ACK, INVALID_INPUT_ERROR)) {
+                LOG("Connection acknowledgement failed", false);
+            } else {
+                LOG("Connection acknowledgement succeeded", true);
+            }
         }
     }
 
