@@ -101,7 +101,7 @@ bool sendConnectionAcknowledgment(int* clientSocket, AckBit ackType, ErrorCode e
  * @param ss_num : Storage server number.
  * @param servers : Pointer to an array of ServerDetails structs containing server details.
  */
-bool forwardClientRequestToServer(int* clientSocket, ClientRequest* clientRequest, int ss_num, ServerDetails* servers) {
+bool forwardClientRequestToServer(int* clientSocket, ClientRequest* clientRequest, int ss_num, ServerDetails* servers, trienode* root) {
     // Connect to the storage server
     int storage_fd; connectToStorageServer(&storage_fd, ss_num, servers);
     if (storage_fd < 0) {
@@ -131,6 +131,17 @@ bool forwardClientRequestToServer(int* clientSocket, ClientRequest* clientReques
         LOG("Error receiving new server details from storage server", false);
         close(storage_fd);
         return false;
+    }
+
+    // Update the server details in the servers[ss_num]
+    // call trieinsert on every path in the list
+    // This will handle trie update for new paths
+    servers[ss_num].num_paths = newServerDetails.num_paths;
+
+    // Overwrite the list of accessible paths with what was just obtained
+    for (int i = 0; i < newServerDetails.num_paths; i++) {
+        strcpy(servers[ss_num].accessible_paths[i], newServerDetails.accessible_paths[i]);
+        trieinsert(&root, servers[ss_num].accessible_paths[i], ss_num);
     }
 
     /* @Anika-Roy please implement trie update */
@@ -194,7 +205,7 @@ bool connectToStorageServer(int* storage_fd, int ss_num, ServerDetails* servers)
  * 
  * @return  true on success, false on failure
  */
-bool handleClientRequest(int* clientSocket, ClientRequest* clientRequest, int ss_num, ServerDetails* servers) {
+bool handleClientRequest(int* clientSocket, ClientRequest* clientRequest, int ss_num, ServerDetails* servers, trienode* root) {
     LOG_CLIENT_REQUEST(clientRequest);
 
     // Check if ss_num is within the valid range
@@ -233,7 +244,7 @@ bool handleClientRequest(int* clientSocket, ClientRequest* clientRequest, int ss
                 }
 
                 // Send the clientRequest to the storage server
-                if (!forwardClientRequestToServer(clientSocket, clientRequest, ss_num, servers)) {
+                if (!forwardClientRequestToServer(clientSocket, clientRequest, ss_num, servers, root)) {
                     LOG("Couldn't forward request to storage server", false);
                     return false;
                 }

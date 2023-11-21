@@ -26,13 +26,13 @@ void handleWrongPath(int* clientSocket);
 bool sendConnectionAcknowledgment(int* clientSocket, AckBit ackType, ErrorCode errorCode);
 
 // Function to forward client request to the storage server
-bool forwardClientRequestToServer(int* clientSocket, ClientRequest *clientRequest, int ss_num, ServerDetails *servers);
+bool forwardClientRequestToServer(int* clientSocket, ClientRequest *clientRequest, int ss_num, ServerDetails *servers, trienode* root);
 
 // Function to connect to the storage server
 bool connectToStorageServer(int* storage_fd, int ss_num, ServerDetails *servers);
 
 // Function to handle client request
-bool handleClientRequest(int* clientSocket, ClientRequest *clientRequest, int ss_num, ServerDetails *servers);
+bool handleClientRequest(int* clientSocket, ClientRequest *clientRequest, int ss_num, ServerDetails *servers, trienode* root);
 
 // Function to register a new server
 bool registerNewServer(
