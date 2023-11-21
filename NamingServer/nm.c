@@ -10,6 +10,7 @@ int server_fds[MAX_SERVERS];                    // Make a list of server fds
 pthread_t clientThreads[MAX_CLIENTS];           // List of client threads
 pthread_t serverNMThreads[MAX_CLIENTS];         // List of client <-> NM interaction threads
 ServerDetails servers[MAX_SERVERS];             // List of servers
+bool already_seen_servers[MAX_SERVERS];         // List of servers that have already been seen
 RedundantServerInfo redundantServers[MAX_SERVERS]; // List of redundant servers
 sem_t servers_initialized;                      // Semaphore to wait for MIN_SERVERS to come alive before client requests begin
 
@@ -17,7 +18,6 @@ int num_servers_running = 0;                    // Keep track of the number of s
 int num_servers_online = 0;                     // Keep track of the number of servers online
 sem_t num_servers_running_mutex;                // Binary semaphore to lock the critical section
 sem_t num_servers_online_mutex;                 // Binary semaphore to lock the critical section
-sem_t servers_ping_mutex[MAX_SERVERS];          // Binary semaphores to lock server last pinged
 
 struct timeval server_ping_time[MAX_SERVERS];   // Stores the last time the storage server was pinged
 
@@ -85,6 +85,31 @@ void checkWhereRedundant(int serverID) {
                     changeRedundantServerActivity(i, serverID);
                     assignRedundantServer(i);
                 }
+            }
+        }
+    }
+}
+
+void respawnGetNewRedundant(int serverID) {
+    int downServers[10];
+    int num_down = 0;
+    for (int i = 0; i < redundantServers[serverID].num_active; i++) {
+        if (!servers[redundantServers[serverID].active[i]].online) {
+            downServers[num_down++] = redundantServers[serverID].active[i];
+        }
+    }
+
+    for (int i = 0; i < num_down; i++) {
+        changeRedundantServerActivity(serverID, downServers[i]);
+        assignRedundantServer(serverID);
+    }
+}
+
+void findInactiveRedundant(int serverID) {
+    for (int i = 0; i < MAX_SERVERS; i++) {
+        for (int j = 0; j < redundantServers[i].num_inactive; j++) {
+            if (redundantServers[i].inactive[j] == serverID) {
+                removeInactiveRedundantServer(i, serverID);
             }
         }
     }
@@ -192,7 +217,6 @@ void removeInactiveRedundantServer(int serverID, int inactiveServerID) {
  * @return Always returns NULL.
  */
 void* aliveThreadAsk(void* arg) {
-    struct timeval curr;
     int serverID = 0;
     ssize_t bytes_read;
     char buffer[10], printBuffer[100];
@@ -223,8 +247,6 @@ void* aliveThreadAsk(void* arg) {
     while(1) {
         memset(buffer, '\0', sizeof(buffer));
         bytes_read = recv(storageServerSocket, buffer, sizeof(buffer), 0);
-        sem_wait(&servers_ping_mutex[serverID]);
-        gettimeofday(&curr, NULL);
         if (bytes_read <= 0) {
             // Got error or connection closed by client
             if (bytes_read == 0) {
@@ -243,13 +265,10 @@ void* aliveThreadAsk(void* arg) {
             break;
         }
         else {
-            server_ping_time[serverID] = curr;
             memset(printBuffer, '\0', sizeof(printBuffer));
             sprintf(printBuffer, "Received alive message from storage server %d", serverID);
             LOG(printBuffer, true);
         }
-
-        sem_post(&servers_ping_mutex[serverID]);
     }
 
     close(storageServerSocket);
@@ -305,6 +324,8 @@ void* listenServerRequests(void* arg) {
     // Log that the client listener has started to listen
     LOG("Naming Server is listening for SERVER connections", true);
 
+    bool init_servers_received = false;
+
     while (1) {
         // Make the socket address struct
         // Mostly obsolete since we don't need
@@ -345,18 +366,32 @@ void* listenServerRequests(void* arg) {
             continue;
         }
 
-        if (num_servers_running == NUM_INIT_SERVERS) {
+        if (init_servers_received) {
+            if (servers[receivedServerDetails.serverID].online) {
+                if (already_seen_servers[receivedServerDetails.serverID]) {
+                    respawnGetNewRedundant(receivedServerDetails.serverID);
+                    findInactiveRedundant(receivedServerDetails.serverID);
+                }
+                else {
+                    assignRedundantServer(receivedServerDetails.serverID);
+                }
+            }
+        }
+        else if (num_servers_running == NUM_INIT_SERVERS) {
             for (int i = 0; i < MAX_SERVERS; i++) {
                 if (servers[i].online) {
                     assignRedundantServer(i);
                 }
             }
+            init_servers_received = true;
         }
-        else if (num_servers_running > NUM_INIT_SERVERS) {
-            if (servers[receivedServerDetails.serverID].online) {
-                assignRedundantServer(receivedServerDetails.serverID);
-            }
-        }
+//        else if (num_servers_running > NUM_INIT_SERVERS) {
+//            if (servers[receivedServerDetails.serverID].online) {
+//                assignRedundantServer(receivedServerDetails.serverID);
+//            }
+//        }
+
+        already_seen_servers[receivedServerDetails.serverID] = true;
     }
 
     closeServerSocket(&serverSocket);
@@ -489,8 +524,9 @@ int main() {
     sem_init(&servers_initialized, 0, 0);
     sem_init(&num_servers_running_mutex, 0, 1);
     sem_init(&num_servers_online_mutex, 0, 1);
+
     for (int i = 0; i < MAX_SERVERS; i++) {
-        sem_init(&servers_ping_mutex[i], 0, 1);
+        already_seen_servers[i] = false;
     }
 
     struct timeval curr;

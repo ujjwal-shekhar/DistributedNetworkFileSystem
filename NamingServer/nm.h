@@ -76,4 +76,10 @@ void removeInactiveRedundantServer(int serverID, int inactiveServerID);
 // Function to figure out which all servers use the particular server as redundant
 void checkWhereRedundant(int serverID);
 
+// Function to find out where all the particular server is present as inactive
+void findInactiveRedundant(int serverID);
+
+// Function to get new Redundant in case some are down after respawn
+void respawnGetNewRedundant(int serverID);
+
 #endif // NM_H
