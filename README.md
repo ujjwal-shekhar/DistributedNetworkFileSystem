@@ -47,5 +47,7 @@ chmod +x clean_compile.sh
 - Server ID is to be entered by the person that is inititializing the server.
 - Instead of asking for user accessible paths, the server will assume all the directories inside the directory that it is run is accessible by it.
 - All paths are unique.
+- We need to have atleast `MIN_INIT_SERVERS` number of servers running. 
 
 # Usage of AI tools
+ChatGPT-3.5Turbo was used.
