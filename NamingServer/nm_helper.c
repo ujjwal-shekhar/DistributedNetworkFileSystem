@@ -144,8 +144,6 @@ bool forwardClientRequestToServer(int* clientSocket, ClientRequest* clientReques
         trieinsert(&root, servers[ss_num].accessible_paths[i], ss_num);
     }
 
-    /* @Anika-Roy please implement trie update */
-
     // Forward the acknowledgment to the client
     if (!sendAckToClient(clientSocket, &nmAck)) {
         return false;
@@ -247,6 +245,13 @@ bool handleClientRequest(int* clientSocket, ClientRequest* clientRequest, int ss
                 if (!forwardClientRequestToServer(clientSocket, clientRequest, ss_num, servers, root)) {
                     LOG("Couldn't forward request to storage server", false);
                     return false;
+                } else {
+                    if (
+                        clientRequest->requestType == DELETE_DIR ||
+                        clientRequest->requestType == DELETE_FILE 
+                    ) {
+                        delete_from_trie(&root, clientRequest->arg1);
+                    }
                 }
 
                 LOG("Forwarding PRIVILEDGED request to storage server successful", true);
@@ -363,7 +368,6 @@ void trieinsert (trienode** root, char* signedtext, int serverID) {
         curr->isEndOfWord = true;
         curr->storage_server = serverID;
     }
-    
 }
 
 /**
@@ -376,22 +380,52 @@ void trieinsert (trienode** root, char* signedtext, int serverID) {
  */
 int search_trie (trienode* root, char* signedtext) {
     if(root == NULL){
-        return false;
+        return -1;
     }
 
-    printf("Searching for the path : %s", signedtext);
+    // printf("Searching for the path : %s", signedtext);
 
     unsigned char* text = (unsigned char*)signedtext;
     trienode* curr = root;
     int length = strlen(signedtext);
+    // printf("\nSearching:");
+    for(int i=0 ; i<length ; i++){
+        if(curr->children[text[i]] == NULL){
+            return -1;
+        }
+        // printf("%c", text[i]);
+        curr = curr->children[text[i]];
+
+        if(curr->isEndOfWord && curr ->storage_server == -1){
+            // the path/directory has been deleted
+            return -1;
+        }
+    }
+    printf("\n");
+
+    return ((curr->isEndOfWord) ? (curr->storage_server) : (-1)); // -1 marks path nowhere
+}
+
+void delete_from_trie(trienode** root, char* signedtext) {
+    if(*root == NULL){
+        return;
+    }
+
+    if(search_trie(*root, signedtext) == -1){
+        return;
+    }
+
+    unsigned char* text = (unsigned char*)signedtext;
+    trienode* curr = *root;
+    int length = strlen(signedtext);
 
     for(int i=0 ; i<length ; i++){
         if(curr->children[text[i]] == NULL){
-            return false;
+            return;
         }
 
         curr = curr->children[text[i]];
     }
-
-    return ((curr->isEndOfWord) ? (curr->storage_server) : (-1)); // -1 marks path nowhere
+    // printf("Marking -1 for char %c\n", text[length-1]);
+    curr-> storage_server = -1;
 }

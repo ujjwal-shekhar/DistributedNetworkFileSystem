@@ -69,5 +69,6 @@ int findStorageServer(char* address, trienode* root, LRU* lru);
 trienode* createnode();
 void trieinsert(trienode** root, char* signedtext, int serverID);
 int search_trie(trienode* root, char* signedtext);
+void delete_from_trie(trienode** root, char* signedtext);
 
 #endif // NM_H
