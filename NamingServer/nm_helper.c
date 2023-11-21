@@ -215,8 +215,7 @@ bool handleClientRequest(int* clientSocket, ClientRequest* clientRequest, int ss
             if (
                 clientRequest->requestType == READ_FILE ||
                 clientRequest->requestType == WRITE_FILE ||
-                clientRequest->requestType == GET_FILE_INFO ||
-                clientRequest->requestType == LIST_ALL
+                clientRequest->requestType == GET_FILE_INFO
             ) {
                 LOG("Request Type : NON-PRIVILEDGED", true);
                 if (!sendConnectionAcknowledgment(clientSocket, CNNCT_TO_SRV_ACK, SUCCESS)) {
@@ -234,6 +233,50 @@ bool handleClientRequest(int* clientSocket, ClientRequest* clientRequest, int ss
                 }
 
                 LOG("Forwarding NON-PRIVILEDGED request to client successful", true);
+                return true;
+            } else if (clientRequest->requestType == LIST_ALL) {
+                // Send the INIT_ACK to client
+                LOG("Request Type : NON-PRIVILEDGED", true);
+                if (!sendConnectionAcknowledgment(clientSocket, INIT_ACK, SUCCESS)) {
+                    LOG("Connection acknowledgement failed", false);
+                    return false;
+                }
+
+                // Iterate over all servers
+                for (int i = 0; i < MAX_SERVERS; i++) if (servers[i].online) {
+                    // Iterate over all their  accessible paths
+                    for (int j = 0; j < servers[i].num_paths; j++) {
+                        // Check if the path given is a prefix of this path
+                        if (strstr(servers[i].accessible_paths[j], clientRequest->arg1) != servers[i].accessible_paths[j]) {
+                            continue;
+                        }
+
+                        // Send the path to the client
+                        FilePacket packet;
+                        strcpy(packet.chunk, servers[i].accessible_paths[j]);
+
+                        // Check if this is last path to be sent
+                        packet.lastChunk = (
+                            (i == MAX_SERVERS - 1) &&
+                            (j == servers[i].num_paths - 1)
+                        );
+
+                        // Send the packet to the client
+                        if (send(*clientSocket, &packet, sizeof(FilePacket), 0) < 0) {
+                            LOG("Error sending path to client", false);
+                            return false;
+                        }
+
+                        LOG("Sent path to client", true);
+                    }
+                }
+
+                // Send the INIT_ACK to client
+                if (!sendConnectionAcknowledgment(clientSocket, SUCCESS_ACK, SUCCESS)) {
+                    LOG("Connection acknowledgement failed", false);
+                    return false;
+                }
+
                 return true;
             } else {
                 LOG("Request Type : PRIVILEDGED", true);
@@ -268,6 +311,7 @@ bool handleClientRequest(int* clientSocket, ClientRequest* clientRequest, int ss
         handleWrongPath(clientSocket);
         return false;
     }
+    
 }
 
 /***************************************************/

@@ -60,7 +60,7 @@ void* handleClientCommunication(void* arg) {
         // snprintf to add the ss_num found
         char inform_log[1024];
         snprintf(inform_log, 1024, "Found storage server %d for path %s", ss_num, clientRequest.arg1);
-        LOG(inform_log, true);        
+        LOG(inform_log, true);
 
         if ((ss_num < 0) || (!handleClientRequest(&clientSocket, &clientRequest, ss_num, servers, root))) {
             LOG("Failed to process client request", false);

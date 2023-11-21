@@ -91,8 +91,8 @@ bool isValidRequest(char *request, ClientRequest *clientRequest) {
     }
 
     // Return true if the number of arguments is valid
-    return (clientRequest->num_args == 2 || clientRequest->num_args == 1 || 
-         (((clientRequest->requestType == LIST_ALL) && (clientRequest->num_args == 0))));
+    return (clientRequest->num_args == 2 || clientRequest->num_args == 1);
+
 }
 
 
@@ -196,6 +196,25 @@ int main() {
                 printf("Error receiving ack from server\n");
                 close(sock_fd);
                 exit(EXIT_FAILURE);
+            }
+
+            if (clientRequest.requestType == LIST_ALL) {
+                // Expect to receive strings back to back
+                FilePacket packet;
+                packet.lastChunk = false;
+
+                // Keep receiving until over
+                do {
+                    // Receive the packet
+                    if (recv(sock_fd, &packet, sizeof(packet), 0) < 0) {
+                        printf("Error receiving packet from server\n");
+                        close(sock_fd);
+                        exit(EXIT_FAILURE);
+                    }
+
+                    // Print the packet
+                    printf("%s\n", packet.chunk);
+                } while (!packet.lastChunk);
             }
 
             // Print the Job Status on stdout to inform the user
