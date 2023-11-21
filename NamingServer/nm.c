@@ -55,7 +55,6 @@ void* handleClientCommunication(void* arg) {
         // which storage server has the requested
         // path inside it. Do this for all num_args
         // number of arguments.
-
         int ss_num = findStorageServer(clientRequest.arg1, root, lru);
 
         // snprintf to add the ss_num found

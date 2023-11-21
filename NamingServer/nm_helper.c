@@ -125,6 +125,16 @@ bool forwardClientRequestToServer(int* clientSocket, ClientRequest* clientReques
     }
     LOG("Received acknowledgement from storage server", true);
 
+    // Receive the new server details from the storage server
+    ServerDetails newServerDetails;
+    if (recv(storage_fd, &newServerDetails, sizeof(newServerDetails), 0) < 0) {
+        LOG("Error receiving new server details from storage server", false);
+        close(storage_fd);
+        return false;
+    }
+
+    /* @Anika-Roy please implement trie update */
+
     // Forward the acknowledgment to the client
     if (!sendAckToClient(clientSocket, &nmAck)) {
         return false;

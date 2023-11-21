@@ -35,6 +35,7 @@ bool get_file_data_from_ss(int* clt_srv_fd) {
 
         if (packet.lastChunk) {
             // Last chunk received, exit the loop
+            printf("This is infact the last chunk\n");
             break;
         }
     }
@@ -75,7 +76,7 @@ bool send_file_data_to_ss(int* clt_srv_fd, const char* filePath) {
             // Check for consecutive enters
             if (buffer[0] == '\n') {
                 consecutiveEnters++;
-                if (consecutiveEnters == 2) {
+                if (consecutiveEnters == 1) {
                     break;  // Exit the loop when two consecutive enters are encountered
                 }
             } else {
@@ -139,6 +140,30 @@ bool send_file_data_to_ss(int* clt_srv_fd, const char* filePath) {
             perror("Error deleting temp_buffer.txt");
             return false;
         }
+
+    return true;
+}
+
+/**
+ * @brief Receive file/folder information from the server.
+ * 
+ * @param serverSocket: The server socket for receiving information.
+ * 
+ * @return true if information reception is successful, false otherwise.
+ */
+bool receiveFileInformation(int* serverSocket) {
+    char buffer[MAX_CHUNK_SIZE + 1];
+    memset(buffer, 0, MAX_CHUNK_SIZE + 1);
+
+    // Receive file information from the server
+    ssize_t bytesRead = recv(*serverSocket, buffer, sizeof(buffer) - 1, 0);
+    if (bytesRead < 0) {
+        perror("Error receiving file information from server");
+        return false;
+    }
+
+    // Print the received file information
+    printf("Received File Information:\n%s\n", buffer);
 
     return true;
 }

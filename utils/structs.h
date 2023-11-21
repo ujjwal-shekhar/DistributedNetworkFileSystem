@@ -103,11 +103,29 @@ typedef struct trienode{
 /**
  * @brief LRU caching for storing recent requests.
  * 
+ * @param pathHash: Hash of the accessed path.
+ * @param serverID: Storage server ID.
+ * @param rank: Rank of the request.
+ * 
  */
 typedef struct LRU {
     unsigned long long pathHash;  ///< Hash of the accessed path.
     int serverID;                 ///< Storage server ID.
     int rank;                     ///< Rank of athe 
 } LRU;
+
+/**
+ * @brief Reader-Writer lock to allow concurrent file reading. But only 
+ * concurrent file writing is not allowed.
+ * 
+ * @param readers: Number of readers currently reading the file.
+ * @param lock: Binary semaphore
+ * @param writeLock: Semaphore to allow only one writer.
+ */
+typedef struct rwlock {
+    int readers;
+    sem_t lock;
+    sem_t writeLock;
+} rwlock;
 
 #endif // STRUCTS_H

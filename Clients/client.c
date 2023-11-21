@@ -62,6 +62,8 @@ bool isValidRequest(char *request, ClientRequest *clientRequest) {
         clientRequest->requestType = DELETE_FILE; // DELETE_FILE
     } else if (strcmp(token, DELETEDIR) == 0) {
         clientRequest->requestType = DELETE_DIR; // DELETE_DIR
+    } else if (strcmp(token, GETINFO) == 0) {
+        clientRequest->requestType = GET_FILE_INFO; // DELETE_DIR
     } else {
         return false;
     }
@@ -109,7 +111,7 @@ int main() {
     // Connect to the server
     if (connect(sock_fd, (struct sockaddr*) &server_addr, sizeof(server_addr)) < 0) {
         perror("Error connecting to server");
-        close(sock_fd);
+        close(sock_fd) ;
         exit(EXIT_FAILURE);
     }
 
@@ -264,8 +266,14 @@ int main() {
                     close(clt_srv_fd);
                     exit(EXIT_FAILURE);
                 }
-            } else {
+            } else if (clientRequest.requestType == GET_FILE_INFO) {
                 printf("Get file info ig\n");
+                if (!receiveFileInformation(&clt_srv_fd)) {
+                    printf("Error receiving file info from storage server\n");
+                    close(sock_fd);
+                    close(clt_srv_fd);
+                    exit(EXIT_FAILURE);
+                }
             }
 
             // Wait for the ack
@@ -284,6 +292,11 @@ int main() {
             }
 
             close(clt_srv_fd);
+
+            // printf("Only 1 interactive process allowed with a Storage Server\n");
+
+            // exit(EXIT_SUCCESS);
+            // break;
         }
     }
 

@@ -38,6 +38,7 @@
 #define WRITEFILE "WRITE_FILE"
 #define DELETEFILE "DELETE_FILE"
 #define DELETEDIR "DELETE_DIR"
+#define GETINFO "GET_INFO"
 
 // Enum for Request type
 typedef enum {

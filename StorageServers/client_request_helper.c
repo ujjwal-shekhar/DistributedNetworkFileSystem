@@ -5,6 +5,52 @@
 #include "../utils/structs.h"
 
 /**
+ * @brief Acquire readlock to allow concurrent file reading.
+ * 
+ * @param rw_lock: Pointer to the rwlock structure.
+ */
+void acquire_readlock(rwlock* rw_lock) {
+    sem_wait(&rw_lock->lock);
+    rw_lock->readers++;
+    if (rw_lock->readers == 1) {
+        sem_wait(&rw_lock->writeLock);
+    }
+    sem_post(&rw_lock->lock);
+}
+
+/**
+ * @brief Release readlock.
+ * 
+ * @param rw_lock: Pointer to the rwlock structure.
+ */
+void release_readlock(rwlock* rw_lock) {
+    sem_wait(&rw_lock->lock);
+    rw_lock->readers--;
+    if (rw_lock->readers == 0) {
+        sem_post(&rw_lock->writeLock);
+    }
+    sem_post(&rw_lock->lock);
+}
+
+/**
+ * @brief Acquire writelock to allow exclusive file writing.
+ * 
+ * @param rw_lock: Pointer to the rwlock structure.
+ */
+void acquire_writelock(rwlock* rw_lock) {
+    sem_wait(&rw_lock->writeLock);
+}
+
+/**
+ * @brief Release writelock.
+ * 
+ * @param rw_lock: Pointer to the rwlock structure.
+ */
+void release_writelock(rwlock* rw_lock) {
+    sem_post(&rw_lock->writeLock);
+}
+
+/**
  * @brief Read file present in ss and send it to client
  *
  * @param path : path of the file to be read
@@ -48,9 +94,12 @@ bool read_file_in_ss(char *path, int *cltSocket) {
             printf("Sending this: %s\n", packet.chunk);
 
             if (packet.lastChunk) {
+                printf("This was the last chunk being sent\n");
                 break; // No need to continue if it's the last chunk
             }
         } while (bytesRead > 0);
+
+        printf("Done sending\n");
 
         fclose(file);
 
@@ -113,6 +162,42 @@ bool write_file_in_ss(char *path, int *cltSocket) {
         fclose(file);
 
         return true;
+}
+
+/**
+ * @brief Get file/folder information for a given relative path and send it over a socket.
+ * 
+ * @param path: The relative path of the file/folder.
+ * @param clientSocket: The client socket for sending the information.
+ * 
+ * @return true if information retrieval and sending are successful, false otherwise.
+ */
+bool sendFileInformation (const char *path, int* clientSocket) {
+    struct stat fileInfo;
+    if (stat(path, &fileInfo) != 0) {
+        perror("Error getting file information");
+        return false;
+    }
+
+    char buffer[MAX_CHUNK_SIZE + 1];
+    memset(buffer, 0, MAX_CHUNK_SIZE + 1);
+
+    // Build the file information string
+    snprintf(buffer, MAX_CHUNK_SIZE,
+             "Size: %lld bytes\n"
+             "Permissions: %o\n"
+             "Last access time: %s"
+             "Last modification time: %s",
+             (long long)fileInfo.st_size, fileInfo.st_mode & 0777,
+             ctime(&fileInfo.st_atime), ctime(&fileInfo.st_mtime));
+
+    // Send the information over the socket
+    if (send(*clientSocket, buffer, strlen(buffer), 0) < 0) {
+        perror("Error sending file information to client");
+        return false;
+    }
+
+    return true;
 }
 
 /**
