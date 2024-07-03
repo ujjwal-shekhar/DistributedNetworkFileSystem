@@ -65,7 +65,7 @@ typedef enum {
     SERVER_ALREADY_REGISTERED,
     SERVER_OFFLINE,
     WRONG_PATH,
-    OTHER = 69
+    OTHER = 100
 } ErrorCode;
 
 // Enum for ACK bit types
