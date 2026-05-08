@@ -7,27 +7,26 @@ module;
 
 module logger;
 
-import core;
-
 namespace logger {
+
+std::string_view level_to_string(Level level) {
+  using namespace std::literals;
+  switch (level) {
+  case Level::INFO:
+    return "\033[34m [INFO]  \033[0m";
+  case Level::WARNING:
+    return "\033[33m [WARN]  \033[0m";
+  case Level::ERROR:
+    return "\033[31m [ERROR] \033[0m";
+  case Level::DEBUG:
+    return "\033[32m [DEBUG] \033[0m";
+  }
+  return "[UNKNOWN]";
+}
 
 void log(Level level, std::string_view message,
          const std::source_location location) {
-  std::string_view level_str;
-  switch (level) {
-  case Level::INFO:
-    level_str = "[INFO] ";
-    break;
-  case Level::WARNING:
-    level_str = "[WARN] ";
-    break;
-  case Level::ERROR:
-    level_str = "[ERROR]";
-    break;
-  case Level::DEBUG:
-    level_str = "[DEBUG]";
-    break;
-  }
+  std::string_view level_str = level_to_string(level);
 
   if (level == Level::ERROR) {
     std::println(std::cerr, "{} {}:{} | {}", level_str, location.file_name(),

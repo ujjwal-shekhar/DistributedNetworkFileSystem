@@ -10,8 +10,6 @@ module;
 
 export module commands;
 
-import core;
-
 namespace commands {
 
 export enum class Status { Success, Error, Denied };

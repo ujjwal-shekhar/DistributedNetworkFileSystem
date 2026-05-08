@@ -20,7 +20,6 @@ export import :commands;
 export import :admin;
 export import :client_manager;
 export import :server;
-import core;
 
 namespace naming {
 

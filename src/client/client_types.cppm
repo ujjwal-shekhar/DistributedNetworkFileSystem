@@ -4,8 +4,6 @@ module;
 
 export module client:types;
 
-import core;
-
 export namespace client {
 
 enum class Error {

@@ -16,8 +16,6 @@ import commands;
 
 export module naming_server:internal;
 
-import core;
-
 namespace naming {
 
 struct TrieNode {

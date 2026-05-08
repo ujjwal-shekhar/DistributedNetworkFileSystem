@@ -9,7 +9,6 @@ export module storage_server;
 export import :types;
 export import :fs_ops;
 export import :sync;
-import :internal;
 
 namespace storage {
 

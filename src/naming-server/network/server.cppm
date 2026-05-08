@@ -7,7 +7,6 @@ import commands;
 export module naming_server:server;
 
 import :types;
-import core;
 
 namespace naming {
 

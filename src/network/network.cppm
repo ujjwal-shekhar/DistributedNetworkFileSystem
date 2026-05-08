@@ -5,8 +5,6 @@ module;
 
 export module network;
 
-import core;
-
 export import :types;
 export import :internal;
 

@@ -9,8 +9,6 @@ import commands;
 
 export module naming_server:commands;
 
-import core;
-
 namespace naming {
 
 export enum class Command {

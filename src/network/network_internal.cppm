@@ -9,16 +9,13 @@ module;
 
 export module network:internal;
 
-import core;
-
 import :types;
 
 namespace network {
 
 Socket::~Socket() {
-  if (is_valid()) {
+  if (is_valid())
     close(fd_);
-  }
 }
 
 Socket &Socket::operator=(Socket &&other) noexcept {
@@ -26,7 +23,7 @@ Socket &Socket::operator=(Socket &&other) noexcept {
     if (is_valid())
       close(fd_);
     fd_ = other.fd_;
-    other.fd_ = INVALID_FD;
+    other.fd_ = Socket::INVALID;
   }
   return *this;
 }
@@ -55,7 +52,7 @@ std::expected<Socket, Error> Socket::accept() const noexcept {
   if (!is_valid())
     return std::unexpected(Error::AcceptFailed);
   int client_fd = ::accept(fd_, nullptr, nullptr);
-  if (client_fd <= INVALID_FD)
+  if (client_fd <= Socket::INVALID)
     return std::unexpected(Error::AcceptFailed);
   return Socket(client_fd);
 }
@@ -73,7 +70,7 @@ std::expected<int, Error> Socket::get_port() const noexcept {
 
 export std::expected<Socket, Error> create_server_socket(int port) {
   int fd = socket(AF_INET, SOCK_STREAM, 0);
-  if (fd <= INVALID_FD)
+  if (fd <= Socket::INVALID)
     return std::unexpected(Error::CreationFailed);
 
   sockaddr_in addr{};
@@ -97,7 +94,7 @@ export std::expected<Socket, Error> create_server_socket(int port) {
 export std::expected<Socket, Error> connect_to_server(const std::string &ip,
                                                       int port) {
   int fd = socket(AF_INET, SOCK_STREAM, 0);
-  if (fd <= INVALID_FD)
+  if (fd <= Socket::INVALID)
     return std::unexpected(Error::CreationFailed);
 
   sockaddr_in addr{};

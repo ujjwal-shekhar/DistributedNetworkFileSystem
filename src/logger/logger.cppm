@@ -5,8 +5,6 @@ module;
 
 export module logger;
 
-import core;
-
 export namespace logger {
 
 enum class Level { INFO, WARNING, ERROR, DEBUG };
