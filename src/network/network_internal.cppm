@@ -1,0 +1,118 @@
+module;
+
+#include <arpa/inet.h>
+#include <expected>
+#include <netinet/in.h>
+#include <string>
+#include <sys/socket.h>
+#include <unistd.h>
+
+export module network:internal;
+
+import core;
+
+import :types;
+
+namespace network {
+
+Socket::~Socket() {
+  if (is_valid()) {
+    close(fd_);
+  }
+}
+
+Socket &Socket::operator=(Socket &&other) noexcept {
+  if (this != &other) {
+    if (is_valid())
+      close(fd_);
+    fd_ = other.fd_;
+    other.fd_ = INVALID_FD;
+  }
+  return *this;
+}
+
+std::expected<size_t, Error> Socket::send(const void *data,
+                                          size_t size) const noexcept {
+  if (!is_valid())
+    return std::unexpected(Error::SendFailed);
+  ssize_t bytes = ::send(fd_, data, size, 0);
+  if (bytes < 0)
+    return std::unexpected(Error::SendFailed);
+  return static_cast<size_t>(bytes);
+}
+
+std::expected<size_t, Error> Socket::receive(void *buffer,
+                                             size_t size) const noexcept {
+  if (!is_valid())
+    return std::unexpected(Error::ReceiveFailed);
+  ssize_t bytes = ::recv(fd_, buffer, size, 0);
+  if (bytes < 0)
+    return std::unexpected(Error::ReceiveFailed);
+  return static_cast<size_t>(bytes);
+}
+
+std::expected<Socket, Error> Socket::accept() const noexcept {
+  if (!is_valid())
+    return std::unexpected(Error::AcceptFailed);
+  int client_fd = ::accept(fd_, nullptr, nullptr);
+  if (client_fd <= INVALID_FD)
+    return std::unexpected(Error::AcceptFailed);
+  return Socket(client_fd);
+}
+
+std::expected<int, Error> Socket::get_port() const noexcept {
+  if (!is_valid())
+    return std::unexpected(Error::CreationFailed);
+  sockaddr_in addr{};
+  socklen_t len = sizeof(addr);
+  if (getsockname(fd_, (struct sockaddr *)&addr, &len) == -1) {
+    return std::unexpected(Error::CreationFailed);
+  }
+  return ntohs(addr.sin_port);
+}
+
+export std::expected<Socket, Error> create_server_socket(int port) {
+  int fd = socket(AF_INET, SOCK_STREAM, 0);
+  if (fd <= INVALID_FD)
+    return std::unexpected(Error::CreationFailed);
+
+  sockaddr_in addr{};
+  addr.sin_family = AF_INET;
+  addr.sin_port = htons(port);
+  addr.sin_addr.s_addr = INADDR_ANY;
+
+  if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
+    close(fd);
+    return std::unexpected(Error::BindFailed);
+  }
+
+  if (listen(fd, 10) == -1) {
+    close(fd);
+    return std::unexpected(Error::ListenFailed);
+  }
+
+  return Socket(fd);
+}
+
+export std::expected<Socket, Error> connect_to_server(const std::string &ip,
+                                                      int port) {
+  int fd = socket(AF_INET, SOCK_STREAM, 0);
+  if (fd <= INVALID_FD)
+    return std::unexpected(Error::CreationFailed);
+
+  sockaddr_in addr{};
+  addr.sin_family = AF_INET;
+  addr.sin_port = htons(port);
+  if (inet_pton(AF_INET, ip.c_str(), &addr.sin_addr) <= 0) {
+    close(fd);
+    return std::unexpected(Error::ConnectFailed);
+  }
+
+  if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
+    close(fd);
+    return std::unexpected(Error::ConnectFailed);
+  }
+
+  return Socket(fd);
+}
+} // namespace network

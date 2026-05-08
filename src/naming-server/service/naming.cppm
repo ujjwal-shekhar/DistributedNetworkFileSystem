@@ -1,0 +1,57 @@
+module;
+
+#include <cstddef>
+#include <cstring>
+#include <expected>
+#include <memory>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+// FEEDBACK; importing in a GMF, please check if this is fine?
+
+import commands;
+
+export module naming_server;
+
+export import :types;
+export import :commands;
+export import :admin;
+export import :client_manager;
+export import :server;
+import core;
+
+namespace naming {
+
+export class NamingService {
+public:
+  NamingService();
+  ~NamingService();
+
+  NamingService(const NamingService &) = delete;
+  NamingService &operator=(const NamingService &) = delete;
+
+  [[nodiscard]] std::expected<int, Error>
+  find_storage_server(std::string_view path);
+  void register_path(std::string_view path, int server_id, bool is_file);
+  void remove_path(std::string_view path);
+
+  int register_server(const commands::ServerDetails &details);
+  void mark_server_offline(int server_id);
+  [[nodiscard]] size_t count_online_servers() const noexcept;
+  [[nodiscard]] size_t count_registered_servers() const noexcept;
+  [[nodiscard]] std::optional<commands::ServerDetails>
+  get_server_details(int server_id);
+
+  [[nodiscard]] ClientManager &clients() noexcept;
+
+private:
+  void register_path_internal(std::string_view path, int server_id,
+                              bool is_file);
+
+  struct Impl;
+  std::unique_ptr<Impl> impl_;
+};
+
+} // namespace naming

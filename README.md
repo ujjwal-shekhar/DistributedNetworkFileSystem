@@ -1,11 +1,13 @@
 # Network File System
 
+OLD VERSION: TBD updating post cpp-ization
+
 ## Team mates
 - Anika Roy
 - Prakul Agarwal
 - Ujjwal Shekhar
 
-# Usage instructions
+## Usage instructions
 - Clone the repository
 ```bash
 git clone link ./name_of_the_directory
@@ -22,7 +24,7 @@ chmod +x clean_compile.sh
 ./clean_compile.sh
 ```
 
-# Components
+#Components
 ## Naming Server
 - Navigate to the directory where NM will start
 ```bash
@@ -41,13 +43,13 @@ chmod +x clean_compile.sh
 ./client
 ```
 
-# Bibliography and Assumptions
+#Bibliography and Assumptions
 - ctrl-Z to exit a client only.
 - Writing to a file is ended by a double enter.
 - Server ID is to be entered by the person that is inititializing the server.
 - Instead of asking for user accessible paths, the server will assume all the directories inside the directory that it is run is accessible by it.
 - All paths are unique.
-- We need to have atleast `MIN_INIT_SERVERS` number of servers running. 
+- We need to have atleast `MIN_INIT_SERVERS` number of servers running.
 
-# Usage of AI tools
+#Usage of AI tools
 ChatGPT-3.5Turbo was used.

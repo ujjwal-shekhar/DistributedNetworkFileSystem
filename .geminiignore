@@ -1,0 +1,15 @@
+# Sensitive
+.git/
+.env
+.ssh/
+secrets/
+
+# Noise
+build/
+bin/
+*.o
+*.a
+*.so
+
+*.md
+!README.md
