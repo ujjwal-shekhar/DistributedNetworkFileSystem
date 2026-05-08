@@ -45,12 +45,30 @@ struct Client::Impl {
     }
 
     switch (meta.tier) {
-    case commands::PrivilegeTier::USER:
-      return handle_user_command(request);
-    case commands::PrivilegeTier::PRIVILEGED:
-      return handle_privileged_command(request);
-    case commands::PrivilegeTier::ADMIN:
-      return handle_admin_command(request);
+    case commands::PrivilegeTier::USER: {
+      auto res = handle_user_command(request);
+      if (res)
+        std::cout << "Command Success.\n";
+      else
+        std::cout << "Command Failed.\n";
+      return res;
+    }
+    case commands::PrivilegeTier::PRIVILEGED: {
+      auto res = handle_privileged_command(request);
+      if (res)
+        std::cout << "Command Success.\n";
+      else
+        std::cout << "Command Failed.\n";
+      return res;
+    }
+    case commands::PrivilegeTier::ADMIN: {
+      auto res = handle_admin_command(request);
+      if (res)
+        std::cout << "Command Success.\n";
+      else
+        std::cout << "Command Failed.\n";
+      return res;
+    }
     }
     return {};
   }
@@ -62,10 +80,23 @@ struct Client::Impl {
     (void)ns_socket->send(&request, sizeof(request));
 
     commands::AckPacket ack;
-    (void)ns_socket->receive(&ack, sizeof(ack));
+    auto recv_ack_res = ns_socket->receive(&ack, sizeof(ack));
+    if (!recv_ack_res || ack.status != commands::Status::Success)
+      return std::unexpected(Error::InvalidCommand);
+
+    if (request.command == commands::Command::LIST_ALL) {
+      for (int i = 0; i < ack.extra_count; ++i) {
+        char buf[commands::MAX_PATH_LEN]{};
+        (void)ns_socket->receive(buf, sizeof(buf));
+        std::cout << " - " << buf << "\n";
+      }
+      return {};
+    }
 
     commands::ServerDetails ss_details;
-    (void)ns_socket->receive(&ss_details, sizeof(ss_details));
+    auto recv_ss_res = ns_socket->receive(&ss_details, sizeof(ss_details));
+    if (!recv_ss_res || *recv_ss_res < sizeof(ss_details))
+      return std::unexpected(Error::ConnectionFailed);
 
     auto ss_sock_res =
         network::connect_to_server(ss_details.ip, ss_details.port_client);
@@ -102,7 +133,9 @@ struct Client::Impl {
       return std::unexpected(Error::ConnectionFailed);
     (void)ns_socket->send(&request, sizeof(request));
     commands::AckPacket ack;
-    (void)ns_socket->receive(&ack, sizeof(ack));
+    auto recv_res = ns_socket->receive(&ack, sizeof(ack));
+    if (!recv_res || ack.status != commands::Status::Success)
+      return std::unexpected(Error::InvalidCommand);
     return {};
   }
 

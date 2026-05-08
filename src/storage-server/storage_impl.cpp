@@ -4,6 +4,7 @@ module;
 #include <chrono>
 #include <cstring>
 #include <expected>
+#include <filesystem>
 #include <memory>
 #include <thread>
 #include <vector>
@@ -31,8 +32,11 @@ struct StorageServer::Impl {
                  std::to_string(port));
 
     auto listen_sock_res = network::create_server_socket(port);
-    if (!listen_sock_res)
+    if (!listen_sock_res) {
+      logger::error("Storage Server: NM listener failed to bind to port " +
+                    std::to_string(port));
       return;
+    }
 
     auto &listen_sock = *listen_sock_res;
 
@@ -43,9 +47,15 @@ struct StorageServer::Impl {
 
       auto &client_sock = *client_sock_res;
       commands::ClientRequest request;
-      auto recv_res = client_sock.receive(&request, sizeof(request));
-      if (!recv_res || *recv_res < sizeof(request))
+      auto recv_res =
+          network::receive_all(client_sock, &request, sizeof(request));
+      if (!recv_res) {
+        logger::error("Storage Server: Failed to receive NM command.");
         continue;
+      }
+
+      logger::info("Storage Server: Received command for path: " +
+                   std::string(request.arg1));
 
       std::string path = request.arg1;
       if (!path.empty() && path[0] == '/')
@@ -67,7 +77,7 @@ struct StorageServer::Impl {
       }
 
       locks.release_write(path);
-      (void)client_sock.send(&ack, sizeof(ack));
+      (void)network::send_all(client_sock, &ack, sizeof(ack));
     }
   }
 
@@ -76,8 +86,11 @@ struct StorageServer::Impl {
                  std::to_string(port));
 
     auto listen_sock_res = network::create_server_socket(port);
-    if (!listen_sock_res)
+    if (!listen_sock_res) {
+      logger::error("Storage Server: Client listener failed to bind to port " +
+                    std::to_string(port));
       return;
+    }
 
     auto &listen_sock = *listen_sock_res;
 
@@ -88,9 +101,15 @@ struct StorageServer::Impl {
 
       auto &client_sock = *client_sock_res;
       commands::ClientRequest request;
-      auto recv_res = client_sock.receive(&request, sizeof(request));
-      if (!recv_res || *recv_res < sizeof(request))
+      auto recv_res =
+          network::receive_all(client_sock, &request, sizeof(request));
+      if (!recv_res) {
+        logger::error("Storage Server: Failed to receive Client command.");
         continue;
+      }
+
+      logger::info("Storage Server: Received command for path: " +
+                   std::string(request.arg1));
 
       std::string path = request.arg1;
       if (!path.empty() && path[0] == '/')
@@ -110,13 +129,13 @@ struct StorageServer::Impl {
         locks.release_write(path);
       }
 
-      (void)client_sock.send(&ack, sizeof(ack));
+      (void)network::send_all(client_sock, &ack, sizeof(ack));
     }
   }
 
   void registration_task(int nm_port, int client_port) {
     logger::info("Storage Server: Registering with Naming Server at " +
-                 config.nm_ip + ":" + std::to_string(config.nm_port));
+                 config.nm_ip + ":5049");
 
     auto sock_res = network::connect_to_server(config.nm_ip, 5049);
     if (!sock_res) {
@@ -139,11 +158,15 @@ struct StorageServer::Impl {
       std::strncpy(details.paths[i], config.accessible_paths[i].c_str(), 256);
     }
 
-    (void)sock.send(&details, sizeof(details));
+    auto send_res = network::send_all(sock, &details, sizeof(details));
+    if (!send_res) {
+      logger::error("Storage Server: Failed to send registration details.");
+      return;
+    }
 
     int id = -1;
-    auto recv_res = sock.receive(&id, sizeof(id));
-    if (recv_res && *recv_res == sizeof(id)) {
+    auto recv_res = network::receive_all(sock, &id, sizeof(id));
+    if (recv_res) {
       assigned_id = id;
       logger::info("Storage Server: Registered with ID: " +
                    std::to_string(assigned_id));
@@ -151,8 +174,6 @@ struct StorageServer::Impl {
       logger::error(
           "Storage Server: Failed to receive assigned ID from Naming Server.");
     }
-
-    // Keep the registration_sock alive to maintain the connection
   }
 };
 
@@ -161,17 +182,39 @@ StorageServer::StorageServer(Config config)
 StorageServer::~StorageServer() { stop(); }
 
 std::expected<void, Error> StorageServer::start() {
+  int nm_port = 0;
+  int client_port = 0;
+
+  {
+    auto nm_sock_res = network::create_server_socket(0);
+    if (!nm_sock_res)
+      return std::unexpected(Error::NetworkError);
+    nm_port = nm_sock_res->get_port().value_or(0);
+
+    auto client_sock_res = network::create_server_socket(0);
+    if (!client_sock_res)
+      return std::unexpected(Error::NetworkError);
+    client_port = client_sock_res->get_port().value_or(0);
+
+    logger::info("Storage Server: Ephemeral ports selected: NM=" +
+                 std::to_string(nm_port) +
+                 " Client=" + std::to_string(client_port));
+    // Temporary sockets closed here to free ports
+  }
+
   impl_->running = true;
 
-  auto nm_sock_res = network::create_server_socket(0);
-  if (!nm_sock_res)
-    return std::unexpected(Error::NetworkError);
-  int nm_port = nm_sock_res->get_port().value_or(0);
-
-  auto client_sock_res = network::create_server_socket(0);
-  if (!client_sock_res)
-    return std::unexpected(Error::NetworkError);
-  int client_port = client_sock_res->get_port().value_or(0);
+  if (!impl_->config.storage_root.empty()) {
+    std::error_code ec;
+    std::filesystem::create_directories(impl_->config.storage_root, ec);
+    std::filesystem::current_path(impl_->config.storage_root, ec);
+    if (ec) {
+      logger::error("Failed to set storage root: " + ec.message());
+      return std::unexpected(Error::OperationFailed);
+    }
+    logger::info("Storage Server: Root directory set to " +
+                 impl_->config.storage_root);
+  }
 
   impl_->registration_task(nm_port, client_port);
 

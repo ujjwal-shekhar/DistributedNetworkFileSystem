@@ -9,6 +9,7 @@ module;
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <vector>
 
 module naming_server;
 
@@ -30,6 +31,23 @@ NamingService::~NamingService() = default;
 
 ClientManager &NamingService::clients() noexcept {
   return impl_->client_manager;
+}
+
+void list_all_recursive(const TrieNode &node, std::string current_path,
+                        std::vector<std::string> &results) {
+  if (node.is_end_of_word) {
+    results.push_back(current_path);
+  }
+  for (const auto &[c, child] : node.children) {
+    list_all_recursive(*child, current_path + c, results);
+  }
+}
+
+std::vector<std::string> NamingService::list_all() const {
+  std::shared_lock lock(impl_->trie_mutex);
+  std::vector<std::string> results;
+  list_all_recursive(impl_->root, "", results);
+  return results;
 }
 
 int NamingService::register_server(const commands::ServerDetails &details) {
@@ -68,6 +86,16 @@ size_t NamingService::count_online_servers() const noexcept {
   return count;
 }
 
+std::vector<int> NamingService::get_online_server_ids() const {
+  std::shared_lock lock(impl_->trie_mutex);
+  std::vector<int> ids;
+  for (const auto &[id, details] : impl_->storage_servers) {
+    if (details.online)
+      ids.push_back(id);
+  }
+  return ids;
+}
+
 size_t NamingService::count_registered_servers() const noexcept {
   std::shared_lock lock(impl_->trie_mutex);
   return impl_->storage_servers.size();
@@ -82,7 +110,7 @@ NamingService::get_server_details(int server_id) {
   return std::nullopt;
 }
 
-std::expected<int, Error>
+std::expected<std::vector<int>, Error>
 NamingService::find_storage_server(std::string_view path) {
   if (auto cached = impl_->cache.get(path)) {
     return *cached;
@@ -96,24 +124,32 @@ NamingService::find_storage_server(std::string_view path) {
       return std::unexpected(Error::PathNotFound);
     }
     curr = it->second.get();
-
-    if (curr->is_end_of_word && curr->server_id == -1) {
-      return std::unexpected(Error::PathNotFound);
-    }
   }
 
-  if (curr->is_end_of_word) {
-    impl_->cache.put(path, curr->server_id);
-    return curr->server_id;
+  if (curr->is_end_of_word && !curr->server_ids.empty()) {
+    impl_->cache.put(path, curr->server_ids);
+    return curr->server_ids;
   }
 
   return std::unexpected(Error::PathNotFound);
 }
 
-void NamingService::register_path(std::string_view path, int server_id,
+void NamingService::register_path(std::string_view path,
+                                  const std::vector<int> &server_ids,
                                   bool is_file) {
   std::unique_lock lock(impl_->trie_mutex);
-  register_path_internal(path, server_id, is_file);
+  TrieNode *curr = &impl_->root;
+  for (char c : path) {
+    auto &child = curr->children[c];
+    if (!child)
+      child = std::make_unique<TrieNode>();
+    curr = child.get();
+    if (c == '/')
+      curr->is_file = false;
+  }
+  curr->is_end_of_word = true;
+  curr->is_file = is_file;
+  curr->server_ids = server_ids;
   impl_->cache.remove(path);
 }
 
@@ -130,7 +166,18 @@ void NamingService::register_path_internal(std::string_view path, int server_id,
   }
   curr->is_end_of_word = true;
   curr->is_file = is_file;
-  curr->server_id = server_id;
+
+  // Add server_id to server_ids if not already present
+  bool found = false;
+  for (int id : curr->server_ids) {
+    if (id == server_id) {
+      found = true;
+      break;
+    }
+  }
+  if (!found) {
+    curr->server_ids.push_back(server_id);
+  }
 }
 
 void NamingService::remove_path(std::string_view path) {
@@ -142,7 +189,7 @@ void NamingService::remove_path(std::string_view path) {
       return;
     curr = it->second.get();
   }
-  curr->server_id = -1;
+  curr->server_ids.clear();
   curr->is_end_of_word = false;
   impl_->cache.remove(path);
 }

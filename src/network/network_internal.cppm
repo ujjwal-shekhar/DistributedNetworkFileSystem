@@ -115,4 +115,37 @@ export std::expected<Socket, Error> connect_to_server(const std::string &ip,
 
   return Socket(fd);
 }
+
+export std::expected<void, Error> send_all(const Socket &sock, const void *data,
+                                           size_t size) {
+  const uint8_t *ptr = static_cast<const uint8_t *>(data);
+  size_t remaining = size;
+  while (remaining > 0) {
+    auto res = sock.send(ptr, remaining);
+    if (!res)
+      return std::unexpected(res.error());
+    if (*res == 0)
+      return std::unexpected(Error::SendFailed);
+    ptr += *res;
+    remaining -= *res;
+  }
+  return {};
+}
+
+export std::expected<void, Error> receive_all(const Socket &sock, void *buffer,
+                                              size_t size) {
+  uint8_t *ptr = static_cast<uint8_t *>(buffer);
+  size_t remaining = size;
+  while (remaining > 0) {
+    auto res = sock.receive(ptr, remaining);
+    if (!res)
+      return std::unexpected(res.error());
+    if (*res == 0)
+      return std::unexpected(Error::ReceiveFailed);
+    ptr += *res;
+    remaining -= *res;
+  }
+  return {};
+}
+
 } // namespace network

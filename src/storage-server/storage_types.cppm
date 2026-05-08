@@ -21,6 +21,7 @@ export struct Config {
   int nm_port;
   int client_port;
   int nm_comm_port;
+  std::string storage_root;
   std::vector<std::string> accessible_paths;
 };
 

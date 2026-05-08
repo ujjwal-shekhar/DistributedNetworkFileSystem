@@ -8,14 +8,23 @@ import naming_server;
 import logger;
 import commands;
 
-// Modernize the argparsing perhaps
 int main(int argc, char *argv[]) {
   int min_ss = 3;
+  int replication_factor = 3;
+
   if (argc > 1) {
     try {
       min_ss = std::stoi(argv[1]);
     } catch (...) {
       std::cerr << "Invalid min_ss value, defaulting to 3.\n";
+    }
+  }
+
+  if (argc > 2) {
+    try {
+      replication_factor = std::stoi(argv[2]);
+    } catch (...) {
+      std::cerr << "Invalid replication_factor value, defaulting to 3.\n";
     }
   }
 
@@ -27,7 +36,7 @@ int main(int argc, char *argv[]) {
 
   naming::NamingServer server(config);
 
-  auto start_res = server.start(min_ss);
+  auto start_res = server.start(min_ss, replication_factor);
   if (!start_res) {
     logger::error("Failed to start Naming Server.");
     return 1;

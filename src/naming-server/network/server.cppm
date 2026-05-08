@@ -19,7 +19,8 @@ public:
   NamingServer(const NamingServer &) = delete;
   NamingServer &operator=(const NamingServer &) = delete;
 
-  [[nodiscard]] std::expected<void, Error> start(int min_ss = 3);
+  [[nodiscard]] std::expected<void, Error> start(int min_ss = 3,
+                                                 int replication_factor = 3);
   void stop();
 
 private:
