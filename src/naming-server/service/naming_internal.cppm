@@ -12,9 +12,9 @@ module;
 #include <vector>
 
 // FEEDBACK; importing in a GMF, please check if this is fine?
-import commands;
-
 export module naming_server:internal;
+
+import commands;
 
 namespace naming {
 

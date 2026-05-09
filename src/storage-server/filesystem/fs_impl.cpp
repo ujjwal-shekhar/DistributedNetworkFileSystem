@@ -76,19 +76,19 @@ FileSystem::read_file(std::string_view path,
     return std::unexpected(Error::FileNotFound);
 
   commands::FilePacket packet;
-  while (file.read(packet.chunk, sizeof(packet.chunk) - 1)) {
-    packet.chunk[file.gcount()] = '\0';
+  while (file.read(packet.chunk, sizeof(packet.chunk))) {
+    packet.size = file.gcount();
     packet.is_last = file.peek() == EOF;
-    (void)client_sock.send(&packet, sizeof(packet));
+    (void)network::send_all(client_sock, &packet, sizeof(packet));
     if (packet.is_last)
       return {};
   }
 
   // Handle last partial chunk
   if (file.gcount() > 0 || file.eof()) {
-    packet.chunk[file.gcount()] = '\0';
+    packet.size = file.gcount();
     packet.is_last = true;
-    (void)client_sock.send(&packet, sizeof(packet));
+    (void)network::send_all(client_sock, &packet, sizeof(packet));
   }
 
   return {};
@@ -103,11 +103,14 @@ FileSystem::write_file(std::string_view path,
 
   commands::FilePacket packet;
   while (true) {
-    auto recv_res = client_sock.receive(&packet, sizeof(packet));
-    if (!recv_res || *recv_res < sizeof(packet))
+    auto recv_res = network::receive_all(client_sock, &packet, sizeof(packet));
+    if (!recv_res)
       break;
 
-    file.write(packet.chunk, std::strlen(packet.chunk));
+    if (packet.size > 0) {
+      file.write(packet.chunk, packet.size);
+    }
+    
     if (packet.is_last)
       break;
   }

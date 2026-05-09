@@ -11,9 +11,9 @@ module;
 
 // FEEDBACK; importing in a GMF, please check if this is fine?
 
-import commands;
-
 export module naming_server;
+
+import commands;
 
 export import :types;
 export import :commands;

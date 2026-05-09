@@ -56,22 +56,22 @@
 ## Refinement of Standards (May 2026 Update)
 
 - **C++26 Reflection (P2996 r13+):**
-    - Use the `<meta>` header.
-    - Use the `^^` operator for reflection.
-    - Wrap the return value of reflection queries (like `std::meta::enumerators_of()`) in `std::define_static_array` to allow for constexpr/static iteration, as they return `std::vector<std::meta::info>`.
-    - Use `[: ... :]` for splicing.
+  - Use the `<meta>` header.
+  - Use the `^^` operator for reflection.
+  - Wrap the return value of reflection queries (like `std::meta::enumerators_of()`) in `std::define_static_array` to allow for constexpr/static iteration, as they return `std::vector<std::meta::info>`.
+  - Use `[: ... :]` for splicing.
 - **Module Architecture:**
-    - **Dependency Direction:** The Primary Module Interface MUST import its partitions (e.g., `import :internal;`). Implementation units (`.cpp`) import the primary module.
-    - **Export Style:** Use individual `export` keywords for granular API control.
+  - **Dependency Direction:** The Primary Module Interface MUST import its partitions (e.g., `import :internal;`). Implementation units (`.cpp`) import the primary module.
+  - **Export Style:** Use individual `export` keywords for granular API control.
 - **Naming Server Privilege Tiers:**
-    - **Tier 1 (USER):** Read-only/Metadata (e.g., `READ_FILE`, `LIST_ALL`).
-    - **Tier 2 (PRIVILEGED):** Structural changes handled by NS instructing SS (e.g., `CREATE_FILE`, `DELETE_DIR`).
-    - **Tier 3 (ADMIN):** Critical actions (e.g., `FAIL_SERVER`). Admin only.
+  - **Tier 1 (USER):** Read-only/Metadata (e.g., `READ_FILE`, `LIST_ALL`).
+  - **Tier 2 (PRIVILEGED):** Structural changes handled by NS instructing SS (e.g., `CREATE_FILE`, `DELETE_DIR`).
+  - **Tier 3 (ADMIN):** Critical actions (e.g., `FAIL_SERVER`). Admin only.
 - **Code Cleanliness:**
-    - Eliminate redundant comments that describe language syntax (e.g., "// Global Module Fragment").
+  - Eliminate redundant comments that describe language syntax (e.g., "// Global Module Fragment").
+  - **Core Module Removal:** The project no longer uses a dedicated `core` module for bundling standard headers. All modules must include necessary standard library and system headers directly in their Global Module Fragment (GMF) to ensure better isolation and follow modern C++ module practices.
 
 - **Module Partition Dependency Rule:** A module partition (e.g., 'module M:P;') MUST NEVER import the primary module interface ('import M;'). This creates a circular dependency. Instead, the primary module interface should import its partitions.
-
 - **Avoid Hardcoding:** Configuration values like ports, IP addresses, and timeouts MUST be part of a configuration object (e.g., 'Config' struct) or passed as arguments. Never hardcode these in implementation logic.
 - **Folder Structure:** Large modules (like Naming Server) should be organized into sub-folders (e.g., 'service/', 'auth/', 'network/') to maintain a clean workspace.
 - **File Descriptor Validation:** Use a standardized check for invalid file descriptors (e.g., a constant 'INVALID_FD' or a helper function) rather than magic numbers like '-1'.

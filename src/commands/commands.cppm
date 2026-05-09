@@ -82,7 +82,7 @@ string_to_command(std::string_view s) {
     return Command::READ_FILE;
   if (s == "WRITE_FILE")
     return Command::WRITE_FILE;
-  if (s == "LIST_ALL")
+  if (s == "LIST_ALL" || s == "LIST_FILES")
     return Command::LIST_ALL;
   return std::nullopt;
 }
@@ -130,6 +130,7 @@ export struct AckPacket {
 
 export struct FilePacket {
   char chunk[FILE_CHUNK_SIZE];
+  size_t size = 0;
   bool is_last = false;
 };
 

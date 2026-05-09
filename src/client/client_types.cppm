@@ -11,7 +11,8 @@ enum class Error {
   InvalidCommand,
   TransferFailed,
   AuthenticationRequired,
-  InsufficientTokens
+  InsufficientTokens,
+  FileNotFound,
 };
 
 struct Session {

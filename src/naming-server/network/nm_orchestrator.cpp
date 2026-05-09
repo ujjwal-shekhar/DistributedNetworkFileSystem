@@ -145,47 +145,14 @@ struct NamingServer::Impl {
     }
   }
 
-  void client_listener(std::stop_token st) {
-    {
-      std::unique_lock lock(registration_mutex);
-      while (!st.stop_requested() && service.count_online_servers() <
-                                         static_cast<size_t>(min_required_ss)) {
-        logger::info("Naming Server: Waiting for " +
-                     std::to_string(min_required_ss) +
-                     " Storage Servers (Current: " +
-                     std::to_string(service.count_online_servers()) + ")");
-        registration_cv.wait(lock);
-      }
-    }
-
-    if (st.stop_requested())
-      return;
-
-    logger::info(
-        "Naming Server: All required Storage Servers connected. Listening for "
-        "Clients on port " +
-        std::to_string(config.nm_clt_port));
-
-    auto listen_sock_res = network::create_server_socket(config.nm_clt_port);
-    if (!listen_sock_res) {
-      logger::error("Naming Server: Failed to bind Client port " +
-                    std::to_string(config.nm_clt_port));
-      return;
-    }
-
-    auto &listen_sock = *listen_sock_res;
+  void client_handler(network::Socket client_sock, std::stop_token st) {
     while (!st.stop_requested()) {
-      auto client_sock_res = listen_sock.accept();
-      if (!client_sock_res)
-        continue;
-
-      auto &client_sock = *client_sock_res;
       commands::ClientRequest request;
       auto recv_res =
           network::receive_all(client_sock, &request, sizeof(request));
       if (!recv_res) {
-        logger::error("Naming Server: Failed to receive Client request.");
-        continue;
+        // Connection closed or error
+        break;
       }
 
       if (request.command == commands::Command::LIST_ALL) {
@@ -233,11 +200,10 @@ struct NamingServer::Impl {
           logger::info("Created " + std::string(request.arg1) + " on " +
                        std::to_string(factor) + " servers.");
         } else {
-          commands::AckPacket ack{.status = commands::Status::Error};
+          commands::AckPacket ack{.status = commands::Status::Error, .error_code = 1};
           (void)network::send_all(client_sock, &ack, sizeof(ack));
         }
       } else {
-        // Handle search commands (READ, WRITE, GET_INFO)
         auto find_res = service.find_storage_server(request.arg1);
         if (find_res && !find_res->empty()) {
           std::optional<commands::ServerDetails> selected_ss;
@@ -255,14 +221,56 @@ struct NamingServer::Impl {
             (void)network::send_all(client_sock, &(*selected_ss),
                                     sizeof(*selected_ss));
           } else {
-            commands::AckPacket ack{.status = commands::Status::Error};
+            commands::AckPacket ack{.status = commands::Status::Error, .error_code = 2};
             (void)network::send_all(client_sock, &ack, sizeof(ack));
           }
         } else {
-          commands::AckPacket ack{.status = commands::Status::Error};
+          commands::AckPacket ack{.status = commands::Status::Error, .error_code = 3};
           (void)network::send_all(client_sock, &ack, sizeof(ack));
         }
       }
+    }
+  }
+
+  void client_listener(std::stop_token st) {
+    {
+      std::unique_lock lock(registration_mutex);
+      while (!st.stop_requested() && service.count_online_servers() <
+                                         static_cast<size_t>(min_required_ss)) {
+        logger::info("Naming Server: Waiting for " +
+                     std::to_string(min_required_ss) +
+                     " Storage Servers (Current: " +
+                     std::to_string(service.count_online_servers()) + ")");
+        registration_cv.wait(lock);
+      }
+    }
+
+    if (st.stop_requested())
+      return;
+
+    logger::info(
+        "Naming Server: All required Storage Servers connected. Listening for "
+        "Clients on port " +
+        std::to_string(config.nm_clt_port));
+
+    auto listen_sock_res = network::create_server_socket(config.nm_clt_port);
+    if (!listen_sock_res) {
+      logger::error("Naming Server: Failed to bind Client port " +
+                    std::to_string(config.nm_clt_port));
+      return;
+    }
+
+    auto &listen_sock = *listen_sock_res;
+    while (!st.stop_requested()) {
+      auto client_sock_res = listen_sock.accept();
+      if (!client_sock_res)
+        continue;
+
+      ss_handlers.emplace_back(
+          [this](std::stop_token st_inner, network::Socket sock) {
+            client_handler(std::move(sock), st_inner);
+          },
+          std::move(*client_sock_res));
     }
   }
 };
