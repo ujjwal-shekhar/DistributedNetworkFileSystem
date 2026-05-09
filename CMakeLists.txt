@@ -106,3 +106,11 @@ gtest_discover_tests(naming_trie_test)
 add_executable(logger_test tests/logger_test.cpp)
 target_link_libraries(logger_test PRIVATE logger_mod GTest::gtest_main)
 gtest_discover_tests(logger_test)
+
+add_executable(storage_test tests/storage_test.cpp)
+target_link_libraries(storage_test PRIVATE storage_mod logger_mod commands_mod network_mod GTest::gtest_main)
+gtest_discover_tests(storage_test)
+
+add_executable(network_test tests/network_test.cpp)
+target_link_libraries(network_test PRIVATE network_mod logger_mod GTest::gtest_main)
+gtest_discover_tests(network_test)

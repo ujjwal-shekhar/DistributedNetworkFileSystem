@@ -88,7 +88,8 @@ struct Client::Impl {
     auto recv_ack_res = network::receive_all(*ns_socket, &ack, sizeof(ack));
     if (!recv_ack_res || ack.status != commands::Status::Success) {
       if (recv_ack_res) {
-        logger::error("Naming Server returned error code: " + std::to_string(ack.error_code));
+        logger::error("Naming Server returned error code: " +
+                      std::to_string(ack.error_code));
       }
       return std::unexpected(Error::InvalidCommand);
     }
@@ -105,7 +106,8 @@ struct Client::Impl {
     std::vector<commands::ServerDetails> replicas;
     for (int i = 0; i < ack.extra_count; ++i) {
       commands::ServerDetails ss_details;
-      auto recv_ss_res = network::receive_all(*ns_socket, &ss_details, sizeof(ss_details));
+      auto recv_ss_res =
+          network::receive_all(*ns_socket, &ss_details, sizeof(ss_details));
       if (recv_ss_res) {
         replicas.push_back(ss_details);
       }
@@ -115,17 +117,21 @@ struct Client::Impl {
       return std::unexpected(Error::ConnectionFailed);
 
     if (request.command == commands::Command::READ_FILE) {
-      auto ss_sock_res = network::connect_to_server(replicas[0].ip, replicas[0].port_client);
+      auto ss_sock_res =
+          network::connect_to_server(replicas[0].ip, replicas[0].port_client);
       if (!ss_sock_res)
         return std::unexpected(Error::ConnectionFailed);
       auto &ss_sock = *ss_sock_res;
       (void)network::send_all(ss_sock, &request, sizeof(request));
       return receive_file_stream(ss_sock);
-    } else if (request.command == commands::Command::WRITE_FILE) {
+    }
+
+    if (request.command == commands::Command::WRITE_FILE) {
       std::vector<commands::FilePacket> buffer;
       if (request.arg2[0] != '\0') {
         auto res = read_file_to_buffer(request.arg2, buffer);
-        if (!res) return res;
+        if (!res)
+          return res;
       } else {
         read_terminal_to_buffer(buffer);
       }
@@ -134,23 +140,37 @@ struct Client::Impl {
       for (const auto &ss : replicas) {
         auto ss_sock_res = network::connect_to_server(ss.ip, ss.port_client);
         if (!ss_sock_res) {
-          logger::warn("Could not connect to replica SS at " + std::string(ss.ip));
+          logger::warn("Could not connect to replica SS at " +
+                       std::string(ss.ip));
           continue;
         }
-        
+
         (void)network::send_all(*ss_sock_res, &request, sizeof(request));
         for (const auto &packet : buffer) {
           (void)network::send_all(*ss_sock_res, &packet, sizeof(packet));
         }
         any_success = true;
       }
-      return any_success ? std::expected<void, Error>{} : std::unexpected(Error::ConnectionFailed);
+      return any_success ? std::expected<void, Error>{}
+                         : std::unexpected(Error::ConnectionFailed);
     }
+
+    if (request.command == commands::Command::GET_FILE_INFO) {
+      std::cout << "File: " << request.arg1 << "\n";
+      std::cout << "Replica count: " << replicas.size() << "\n";
+      for (const auto &ss : replicas) {
+        std::cout << " - " << ss.ip << ":" << ss.port_client << " (SS ID: "
+                  << ss.id << ")\n";
+      }
+      return {};
+    }
+
     return {};
   }
 
   std::expected<void, Error>
-  read_file_to_buffer(std::string_view local_path, std::vector<commands::FilePacket> &buffer) {
+  read_file_to_buffer(std::string_view local_path,
+                      std::vector<commands::FilePacket> &buffer) {
     std::ifstream file{std::string(local_path), std::ios::binary};
     if (!file) {
       logger::error("Could not open local file: " + std::string(local_path));
@@ -162,7 +182,8 @@ struct Client::Impl {
       packet.size = file.gcount();
       packet.is_last = file.peek() == EOF;
       buffer.push_back(packet);
-      if (packet.is_last) return {};
+      if (packet.is_last)
+        return {};
     }
 
     if (file.gcount() > 0 || file.eof()) {
@@ -178,7 +199,8 @@ struct Client::Impl {
     std::string line;
     commands::FilePacket packet;
     while (std::getline(std::cin, line)) {
-      if (line == "END") break;
+      if (line == "END")
+        break;
       line += "\n";
       size_t pos = 0;
       while (pos < line.size()) {
@@ -222,7 +244,8 @@ struct Client::Impl {
     auto recv_res = network::receive_all(*ns_socket, &ack, sizeof(ack));
     if (!recv_res || ack.status != commands::Status::Success) {
       if (recv_res) {
-        logger::error("Naming Server returned error code: " + std::to_string(ack.error_code));
+        logger::error("Naming Server returned error code: " +
+                      std::to_string(ack.error_code));
       }
       return std::unexpected(Error::InvalidCommand);
     }

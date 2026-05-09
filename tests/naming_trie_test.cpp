@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <vector>
 #include <string>
+#include <cstring>
 import naming_server;
 import commands;
 
@@ -41,4 +42,54 @@ TEST(NamingTrieTest, RemovePathRecursive) {
   
   res = service.find_storage_server("X/b.txt");
   EXPECT_TRUE(res.has_value());
+}
+
+TEST(NamingTrieTest, UnderReplicationDetection) {
+  naming::NamingService service;
+  commands::ServerDetails ss1{.id = 1, .online = true};
+  commands::ServerDetails ss2{.id = 2, .online = true};
+  service.register_server(ss1);
+  service.register_server(ss2);
+
+  service.register_path("replicated.txt", {1, 2}, true);
+  service.register_path("under.txt", {1}, true);
+
+  // Target factor 2: replicated.txt (2 online) is OK, under.txt (1 online) is NOT
+  auto tasks = service.get_under_replicated_paths(2);
+  ASSERT_EQ(tasks.size(), 1);
+  EXPECT_EQ(tasks[0].path, "under.txt");
+  EXPECT_EQ(tasks[0].current_online_servers.size(), 1);
+
+  // Mark server 2 offline
+  service.mark_server_offline(2);
+  
+  // Now replicated.txt also has only 1 online server
+  tasks = service.get_under_replicated_paths(2);
+  EXPECT_EQ(tasks.size(), 2);
+}
+
+TEST(NamingTrieTest, AddServerToPath) {
+  naming::NamingService service;
+  service.register_path("file.txt", {1}, true);
+  
+  service.add_server_to_path("file.txt", 2);
+  
+  auto res = service.find_storage_server("file.txt");
+  ASSERT_TRUE(res.has_value());
+  EXPECT_EQ(res->size(), 2);
+  EXPECT_EQ((*res)[1], 2);
+}
+
+TEST(NamingTrieTest, ServerRegistration) {
+  naming::NamingService service;
+  commands::ServerDetails details{.id = -1};
+  std::strncpy(details.paths[0], "p1", 256);
+  details.path_count = 1;
+
+  int id = service.register_server(details);
+  EXPECT_GT(id, 0);
+  
+  auto res = service.find_storage_server("p1");
+  ASSERT_TRUE(res.has_value());
+  EXPECT_EQ((*res)[0], id);
 }

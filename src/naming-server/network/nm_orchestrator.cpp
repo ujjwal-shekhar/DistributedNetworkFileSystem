@@ -333,7 +333,8 @@ struct NamingServer::Impl {
           }
 
           if (!online_replicas.empty()) {
-            if (request.command == commands::Command::WRITE_FILE) {
+            if (request.command == commands::Command::WRITE_FILE ||
+                request.command == commands::Command::GET_FILE_INFO) {
               commands::AckPacket ack{.status = commands::Status::Success};
               ack.extra_count = static_cast<int>(online_replicas.size());
               (void)network::send_all(client_sock, &ack, sizeof(ack));
