@@ -234,7 +234,7 @@ std::expected<void, Error> StorageServer::start() {
 
   std::string root = impl_->config.storage_root;
   if (root.empty()) {
-    root = "SS_" + std::to_string(impl_->assigned_id);
+    root = "mnt/SS_" + std::to_string(impl_->assigned_id);
   }
 
   std::error_code ec;

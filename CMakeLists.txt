@@ -72,11 +72,11 @@ target_sources(client_mod
 target_link_libraries(client_mod PUBLIC commands_mod network_mod naming_mod logger_mod)
 
 # Executables
-add_executable(main_nm main_nm.cpp)
-target_link_libraries(main_nm PRIVATE naming_mod logger_mod commands_mod)
+add_executable(nm src/nm.cpp)
+target_link_libraries(nm PRIVATE naming_mod logger_mod commands_mod)
 
-add_executable(main_client main_client.cpp)
-target_link_libraries(main_client PRIVATE client_mod logger_mod commands_mod)
+add_executable(clt src/client.cpp)
+target_link_libraries(clt PRIVATE client_mod logger_mod commands_mod)
 
-add_executable(main_server main_server.cpp)
-target_link_libraries(main_server PRIVATE storage_mod logger_mod commands_mod)
+add_executable(ss src/storage_server.cpp)
+target_link_libraries(ss PRIVATE storage_mod logger_mod commands_mod)
