@@ -11,7 +11,6 @@ module;
 #include <utility>
 #include <vector>
 
-// FEEDBACK; importing in a GMF, please check if this is fine?
 export module naming_server:internal;
 
 import commands;

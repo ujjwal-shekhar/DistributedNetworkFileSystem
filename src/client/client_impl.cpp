@@ -94,29 +94,98 @@ struct Client::Impl {
       return {};
     }
 
-    commands::ServerDetails ss_details;
-    auto recv_ss_res = network::receive_all(*ns_socket, &ss_details, sizeof(ss_details));
-    if (!recv_ss_res)
-      return std::unexpected(Error::ConnectionFailed);
-
-    auto ss_sock_res =
-        network::connect_to_server(ss_details.ip, ss_details.port_client);
-    if (!ss_sock_res)
-      return std::unexpected(Error::ConnectionFailed);
-    auto &ss_sock = *ss_sock_res;
-
-    (void)network::send_all(ss_sock, &request, sizeof(request));
-
-    if (request.command == commands::Command::READ_FILE) {
-      return receive_file_stream(ss_sock);
-    } else if (request.command == commands::Command::WRITE_FILE) {
-      if (request.arg2[0] != '\0') {
-        return send_file_stream(ss_sock, request.arg2);
-      } else {
-        return send_terminal_input(ss_sock);
+    std::vector<commands::ServerDetails> replicas;
+    for (int i = 0; i < ack.extra_count; ++i) {
+      commands::ServerDetails ss_details;
+      auto recv_ss_res = network::receive_all(*ns_socket, &ss_details, sizeof(ss_details));
+      if (recv_ss_res) {
+        replicas.push_back(ss_details);
       }
     }
+
+    if (replicas.empty())
+      return std::unexpected(Error::ConnectionFailed);
+
+    if (request.command == commands::Command::READ_FILE) {
+      auto ss_sock_res = network::connect_to_server(replicas[0].ip, replicas[0].port_client);
+      if (!ss_sock_res)
+        return std::unexpected(Error::ConnectionFailed);
+      auto &ss_sock = *ss_sock_res;
+      (void)network::send_all(ss_sock, &request, sizeof(request));
+      return receive_file_stream(ss_sock);
+    } else if (request.command == commands::Command::WRITE_FILE) {
+      std::vector<commands::FilePacket> buffer;
+      if (request.arg2[0] != '\0') {
+        auto res = read_file_to_buffer(request.arg2, buffer);
+        if (!res) return res;
+      } else {
+        read_terminal_to_buffer(buffer);
+      }
+
+      bool any_success = false;
+      for (const auto &ss : replicas) {
+        auto ss_sock_res = network::connect_to_server(ss.ip, ss.port_client);
+        if (!ss_sock_res) {
+          logger::warn("Could not connect to replica SS at " + std::string(ss.ip));
+          continue;
+        }
+        
+        (void)network::send_all(*ss_sock_res, &request, sizeof(request));
+        for (const auto &packet : buffer) {
+          (void)network::send_all(*ss_sock_res, &packet, sizeof(packet));
+        }
+        any_success = true;
+      }
+      return any_success ? std::expected<void, Error>{} : std::unexpected(Error::ConnectionFailed);
+    }
     return {};
+  }
+
+  std::expected<void, Error>
+  read_file_to_buffer(std::string_view local_path, std::vector<commands::FilePacket> &buffer) {
+    std::ifstream file{std::string(local_path), std::ios::binary};
+    if (!file) {
+      logger::error("Could not open local file: " + std::string(local_path));
+      return std::unexpected(Error::FileNotFound);
+    }
+
+    commands::FilePacket packet;
+    while (file.read(packet.chunk, sizeof(packet.chunk))) {
+      packet.size = file.gcount();
+      packet.is_last = file.peek() == EOF;
+      buffer.push_back(packet);
+      if (packet.is_last) return {};
+    }
+
+    if (file.gcount() > 0 || file.eof()) {
+      packet.size = file.gcount();
+      packet.is_last = true;
+      buffer.push_back(packet);
+    }
+    return {};
+  }
+
+  void read_terminal_to_buffer(std::vector<commands::FilePacket> &buffer) {
+    std::cout << "Enter content (type 'END' on a new line to finish):\n";
+    std::string line;
+    commands::FilePacket packet;
+    while (std::getline(std::cin, line)) {
+      if (line == "END") break;
+      line += "\n";
+      size_t pos = 0;
+      while (pos < line.size()) {
+        size_t to_copy = std::min(line.size() - pos, sizeof(packet.chunk));
+        std::memcpy(packet.chunk, line.data() + pos, to_copy);
+        packet.size = to_copy;
+        pos += to_copy;
+        packet.is_last = false;
+        buffer.push_back(packet);
+      }
+    }
+    std::memset(packet.chunk, 0, sizeof(packet.chunk));
+    packet.size = 0;
+    packet.is_last = true;
+    buffer.push_back(packet);
   }
 
   std::expected<void, Error>
@@ -133,57 +202,6 @@ struct Client::Impl {
         break;
     }
     std::cout << std::endl;
-    return {};
-  }
-
-  std::expected<void, Error>
-  send_file_stream(const network::Socket &ss_sock, std::string_view local_path) {
-    std::ifstream file{std::string(local_path), std::ios::binary};
-    if (!file) {
-      logger::error("Could not open local file: " + std::string(local_path));
-      return std::unexpected(Error::FileNotFound);
-    }
-
-    commands::FilePacket packet;
-    while (file.read(packet.chunk, sizeof(packet.chunk))) {
-      packet.size = file.gcount();
-      packet.is_last = file.peek() == EOF;
-      (void)network::send_all(ss_sock, &packet, sizeof(packet));
-      if (packet.is_last)
-        return {};
-    }
-
-    if (file.gcount() > 0 || file.eof()) {
-      packet.size = file.gcount();
-      packet.is_last = true;
-      (void)network::send_all(ss_sock, &packet, sizeof(packet));
-    }
-    return {};
-  }
-
-  std::expected<void, Error>
-  send_terminal_input(const network::Socket &ss_sock) {
-    std::cout << "Enter content (type 'END' on a new line to finish):\n";
-    std::string line;
-    commands::FilePacket packet;
-    while (std::getline(std::cin, line)) {
-      if (line == "END")
-        break;
-      line += "\n";
-      size_t pos = 0;
-      while (pos < line.size()) {
-        size_t to_copy = std::min(line.size() - pos, sizeof(packet.chunk));
-        std::memcpy(packet.chunk, line.data() + pos, to_copy);
-        packet.size = to_copy;
-        pos += to_copy;
-        packet.is_last = false;
-        (void)network::send_all(ss_sock, &packet, sizeof(packet));
-      }
-    }
-    std::memset(packet.chunk, 0, sizeof(packet.chunk));
-    packet.size = 0;
-    packet.is_last = true;
-    (void)network::send_all(ss_sock, &packet, sizeof(packet));
     return {};
   }
 

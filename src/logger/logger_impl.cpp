@@ -27,12 +27,17 @@ std::string_view level_to_string(Level level) {
 void log(Level level, std::string_view message,
          const std::source_location location) {
   std::string_view level_str = level_to_string(level);
+  std::string_view file = location.file_name();
+  
+  if (auto pos = file.find("src/"); pos != std::string_view::npos) {
+    file = file.substr(pos + 4);
+  }
 
   if (level == Level::ERROR) {
-    std::println(std::cerr, "{} {}:{} | {}", level_str, location.file_name(),
+    std::println(std::cerr, "{} {}:{} | {}", level_str, file,
                  location.line(), message);
   } else {
-    std::println("{} {}:{} | {}", level_str, location.file_name(),
+    std::println("{} {}:{} | {}", level_str, file,
                  location.line(), message);
   }
 }

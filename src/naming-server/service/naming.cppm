@@ -9,8 +9,6 @@ module;
 #include <string_view>
 #include <vector>
 
-// FEEDBACK; importing in a GMF, please check if this is fine?
-
 export module naming_server;
 
 import commands;

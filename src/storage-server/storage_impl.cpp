@@ -54,8 +54,9 @@ struct StorageServer::Impl {
         continue;
       }
 
-      logger::info("Storage Server: Received command for path: " +
-                   std::string(request.arg1));
+      logger::info("Storage Server: Received command " + 
+                   std::string(commands::get_metadata(request.command).name) + 
+                   " for path: " + std::string(request.arg1));
 
       std::string path = request.arg1;
       if (!path.empty() && path[0] == '/')
@@ -66,14 +67,23 @@ struct StorageServer::Impl {
       locks.acquire_write(path);
 
       if (request.command == commands::Command::CREATE_DIR) {
-        if (!FileSystem::create_directory(path))
+        if (auto res = FileSystem::create_directory(path); !res) {
           ack.status = commands::Status::Error;
+          ack.error_code = static_cast<int>(res.error());
+          logger::error("Failed to create directory " + path + ": " + std::to_string(ack.error_code));
+        }
       } else if (request.command == commands::Command::CREATE_FILE) {
-        if (!FileSystem::create_file(path))
+        if (auto res = FileSystem::create_file(path); !res) {
           ack.status = commands::Status::Error;
+          ack.error_code = static_cast<int>(res.error());
+          logger::error("Failed to create file " + path + ": " + std::to_string(ack.error_code));
+        }
       } else if (request.command == commands::Command::DELETE_FILE) {
-        if (!FileSystem::delete_file(path))
+        if (auto res = FileSystem::delete_file(path); !res) {
           ack.status = commands::Status::Error;
+          ack.error_code = static_cast<int>(res.error());
+          logger::error("Failed to delete file " + path + ": " + std::to_string(ack.error_code));
+        }
       }
 
       locks.release_write(path);
@@ -108,8 +118,9 @@ struct StorageServer::Impl {
         continue;
       }
 
-      logger::info("Storage Server: Received command for path: " +
-                   std::string(request.arg1));
+      logger::info("Storage Server: Received command " + 
+                   std::string(commands::get_metadata(request.command).name) + 
+                   " for path: " + std::string(request.arg1));
 
       std::string path = request.arg1;
       if (!path.empty() && path[0] == '/')
@@ -119,13 +130,19 @@ struct StorageServer::Impl {
 
       if (request.command == commands::Command::READ_FILE) {
         locks.acquire_read(path);
-        if (!FileSystem::read_file(path, client_sock))
+        if (auto res = FileSystem::read_file(path, client_sock); !res) {
           ack.status = commands::Status::Error;
+          ack.error_code = static_cast<int>(res.error());
+          logger::error("Failed to read file " + path + ": " + std::to_string(ack.error_code));
+        }
         locks.release_read(path);
       } else if (request.command == commands::Command::WRITE_FILE) {
         locks.acquire_write(path);
-        if (!FileSystem::write_file(path, client_sock))
+        if (auto res = FileSystem::write_file(path, client_sock); !res) {
           ack.status = commands::Status::Error;
+          ack.error_code = static_cast<int>(res.error());
+          logger::error("Failed to write file " + path + ": " + std::to_string(ack.error_code));
+        }
         locks.release_write(path);
       }
 
@@ -199,24 +216,29 @@ std::expected<void, Error> StorageServer::start() {
     logger::info("Storage Server: Ephemeral ports selected: NM=" +
                  std::to_string(nm_port) +
                  " Client=" + std::to_string(client_port));
-    // Temporary sockets closed here to free ports
   }
 
   impl_->running = true;
+  impl_->registration_task(nm_port, client_port);
 
-  if (!impl_->config.storage_root.empty()) {
-    std::error_code ec;
-    std::filesystem::create_directories(impl_->config.storage_root, ec);
-    std::filesystem::current_path(impl_->config.storage_root, ec);
-    if (ec) {
-      logger::error("Failed to set storage root: " + ec.message());
-      return std::unexpected(Error::OperationFailed);
-    }
-    logger::info("Storage Server: Root directory set to " +
-                 impl_->config.storage_root);
+  if (impl_->assigned_id == -1) {
+    logger::error("Storage Server: Registration failed, cannot start listeners.");
+    return std::unexpected(Error::NetworkError);
   }
 
-  impl_->registration_task(nm_port, client_port);
+  std::string root = impl_->config.storage_root;
+  if (root.empty()) {
+    root = "SS_" + std::to_string(impl_->assigned_id);
+  }
+
+  std::error_code ec;
+  std::filesystem::create_directories(root, ec);
+  std::filesystem::current_path(root, ec);
+  if (ec) {
+    logger::error("Failed to set storage root " + root + ": " + ec.message());
+    return std::unexpected(Error::OperationFailed);
+  }
+  logger::info("Storage Server: Storage root isolated at: " + root);
 
   impl_->threads.emplace_back([this, nm_port](std::stop_token st) {
     impl_->nm_listener_task(st, nm_port);

@@ -168,6 +168,13 @@ struct NamingServer::Impl {
         }
       } else if (request.command == commands::Command::CREATE_FILE ||
                  request.command == commands::Command::CREATE_DIR) {
+        if (auto find_res = service.find_storage_server(request.arg1); find_res) {
+          logger::warn("Naming Server: Path already exists: " + std::string(request.arg1));
+          commands::AckPacket ack{.status = commands::Status::Error, .error_code = 409};
+          (void)network::send_all(client_sock, &ack, sizeof(ack));
+          continue;
+        }
+
         auto online_ids = service.get_online_server_ids();
         int factor =
             std::min(static_cast<int>(online_ids.size()), replication_factor);
@@ -203,23 +210,58 @@ struct NamingServer::Impl {
           commands::AckPacket ack{.status = commands::Status::Error, .error_code = 1};
           (void)network::send_all(client_sock, &ack, sizeof(ack));
         }
+      } else if (request.command == commands::Command::DELETE_FILE ||
+                 request.command == commands::Command::DELETE_DIR) {
+        auto find_res = service.find_storage_server(request.arg1);
+        if (find_res && !find_res->empty()) {
+          bool any_success = false;
+          for (int id : *find_res) {
+            if (send_to_ss(id, request)) {
+              any_success = true;
+            }
+          }
+          if (any_success) {
+            service.remove_path(request.arg1);
+            commands::AckPacket ack{.status = commands::Status::Success};
+            (void)network::send_all(client_sock, &ack, sizeof(ack));
+          } else {
+            commands::AckPacket ack{.status = commands::Status::Error, .error_code = 4};
+            (void)network::send_all(client_sock, &ack, sizeof(ack));
+          }
+        } else {
+          commands::AckPacket ack{.status = commands::Status::Error, .error_code = 3};
+          (void)network::send_all(client_sock, &ack, sizeof(ack));
+        }
       } else {
         auto find_res = service.find_storage_server(request.arg1);
         if (find_res && !find_res->empty()) {
-          std::optional<commands::ServerDetails> selected_ss;
+          std::vector<commands::ServerDetails> online_replicas;
           for (int id : *find_res) {
             auto details = service.get_server_details(id);
             if (details && details->online) {
-              selected_ss = details;
-              break;
+              online_replicas.push_back(*details);
             }
           }
 
-          if (selected_ss) {
-            commands::AckPacket ack{.status = commands::Status::Success};
-            (void)network::send_all(client_sock, &ack, sizeof(ack));
-            (void)network::send_all(client_sock, &(*selected_ss),
-                                    sizeof(*selected_ss));
+          if (!online_replicas.empty()) {
+            if (request.command == commands::Command::WRITE_FILE) {
+              commands::AckPacket ack{.status = commands::Status::Success};
+              ack.extra_count = static_cast<int>(online_replicas.size());
+              (void)network::send_all(client_sock, &ack, sizeof(ack));
+              for (const auto &details : online_replicas) {
+                (void)network::send_all(client_sock, &details, sizeof(details));
+              }
+            } else {
+              // For READ_FILE and others, just pick one (Load balancing)
+              commands::AckPacket ack{.status = commands::Status::Success};
+              ack.extra_count = 1;
+              (void)network::send_all(client_sock, &ack, sizeof(ack));
+              
+              std::shuffle(online_replicas.begin(), online_replicas.end(),
+                           std::mt19937{std::random_device{}()});
+              (void)network::send_all(client_sock, &online_replicas[0],
+                                      sizeof(online_replicas[0]));
+            }
           } else {
             commands::AckPacket ack{.status = commands::Status::Error, .error_code = 2};
             (void)network::send_all(client_sock, &ack, sizeof(ack));
