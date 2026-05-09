@@ -4,6 +4,8 @@ module;
 #include <print>
 #include <source_location>
 #include <string_view>
+#include <chrono>
+#include <format>
 
 module logger;
 
@@ -26,6 +28,9 @@ std::string_view level_to_string(Level level) {
 
 void log(Level level, std::string_view message,
          const std::source_location location) {
+  auto now = std::chrono::system_clock::now();
+  std::string timestamp = std::format("{:%Y-%m-%d %H:%M:%S}", std::chrono::floor<std::chrono::seconds>(now));
+
   std::string_view level_str = level_to_string(level);
   std::string_view file = location.file_name();
   
@@ -34,10 +39,10 @@ void log(Level level, std::string_view message,
   }
 
   if (level == Level::ERROR) {
-    std::println(std::cerr, "{} {}:{} | {}", level_str, file,
+    std::println(std::cerr, "[{}] {} {}:{} | {}", timestamp, level_str, file,
                  location.line(), message);
   } else {
-    std::println("{} {}:{} | {}", level_str, file,
+    std::println("[{}] {} {}:{} | {}", timestamp, level_str, file,
                  location.line(), message);
   }
 }

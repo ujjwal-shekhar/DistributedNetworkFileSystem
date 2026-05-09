@@ -3,5 +3,7 @@ obj
 bin
 *.o
 
+tests/*.log
+
 build/
 mnt/
