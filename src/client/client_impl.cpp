@@ -9,6 +9,8 @@ module;
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <thread>
+#include <chrono>
 #include <vector>
 
 module client;
@@ -36,13 +38,15 @@ struct Client::Impl {
     commands::Command cmd = *cmd_opt;
     auto meta = commands::get_metadata(cmd);
 
-    commands::ClientRequest request{.command = cmd};
+    commands::ClientRequest request{};
+    request.command = cmd;
+    
     std::string arg;
     if (ss >> arg) {
-      std::strncpy(request.arg1, arg.c_str(), sizeof(request.arg1));
+      std::strncpy(request.arg1, arg.c_str(), sizeof(request.arg1) - 1);
     }
     if (ss >> arg) {
-      std::strncpy(request.arg2, arg.c_str(), sizeof(request.arg2));
+      std::strncpy(request.arg2, arg.c_str(), sizeof(request.arg2) - 1);
     }
 
     switch (meta.tier) {
@@ -82,8 +86,12 @@ struct Client::Impl {
 
     commands::AckPacket ack;
     auto recv_ack_res = network::receive_all(*ns_socket, &ack, sizeof(ack));
-    if (!recv_ack_res || ack.status != commands::Status::Success)
+    if (!recv_ack_res || ack.status != commands::Status::Success) {
+      if (recv_ack_res) {
+        logger::error("Naming Server returned error code: " + std::to_string(ack.error_code));
+      }
       return std::unexpected(Error::InvalidCommand);
+    }
 
     if (request.command == commands::Command::LIST_ALL) {
       for (int i = 0; i < ack.extra_count; ++i) {
@@ -212,8 +220,12 @@ struct Client::Impl {
     (void)network::send_all(*ns_socket, &request, sizeof(request));
     commands::AckPacket ack;
     auto recv_res = network::receive_all(*ns_socket, &ack, sizeof(ack));
-    if (!recv_res || ack.status != commands::Status::Success)
+    if (!recv_res || ack.status != commands::Status::Success) {
+      if (recv_res) {
+        logger::error("Naming Server returned error code: " + std::to_string(ack.error_code));
+      }
       return std::unexpected(Error::InvalidCommand);
+    }
     return {};
   }
 
@@ -237,11 +249,23 @@ Client::Client() : impl_(std::make_unique<Impl>()) {}
 Client::~Client() = default;
 
 std::expected<void, Error> Client::connect(std::string_view ip, int port) {
-  auto sock_res = network::connect_to_server(std::string(ip), port);
-  if (!sock_res)
-    return std::unexpected(Error::ConnectionFailed);
-  impl_->ns_socket = std::move(*sock_res);
-  return {};
+  int retries = 0;
+  const int max_retries = 10;
+  
+  while (retries < max_retries) {
+    auto sock_res = network::connect_to_server(std::string(ip), port);
+    if (sock_res) {
+      impl_->ns_socket = std::move(*sock_res);
+      return {};
+    }
+    
+    retries++;
+    logger::warn("Client: Failed to connect to Naming Server (attempt " + 
+                 std::to_string(retries) + "/" + std::to_string(max_retries) + "). Retrying in 2s...");
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+  }
+
+  return std::unexpected(Error::ConnectionFailed);
 }
 
 std::expected<void, Error> Client::run_interactive_loop() {
@@ -250,6 +274,10 @@ std::expected<void, Error> Client::run_interactive_loop() {
     std::cout << "DFS> " << std::flush;
     if (!std::getline(std::cin, line) || line == "exit")
       break;
+    
+    if (line.empty() || line.find_first_not_of(" \t\n\r") == std::string::npos)
+      continue;
+
     auto res = impl_->process_command(line);
     if (!res)
       logger::error("Command failed.");

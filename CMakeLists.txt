@@ -6,6 +6,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_SCAN_FOR_MODULES ON)
 
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.tar.gz
+)
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
+enable_testing()
+
 # 2. Commands Module
 add_library(commands_mod STATIC)
 target_sources(commands_mod PUBLIC FILE_SET CXX_MODULES FILES 
@@ -80,3 +91,18 @@ target_link_libraries(clt PRIVATE client_mod logger_mod commands_mod)
 
 add_executable(ss src/storage_server.cpp)
 target_link_libraries(ss PRIVATE storage_mod logger_mod commands_mod)
+
+# Tests
+include(GoogleTest)
+
+add_executable(commands_test tests/commands_test.cpp)
+target_link_libraries(commands_test PRIVATE commands_mod GTest::gtest_main)
+gtest_discover_tests(commands_test)
+
+add_executable(naming_trie_test tests/naming_trie_test.cpp)
+target_link_libraries(naming_trie_test PRIVATE naming_mod logger_mod commands_mod network_mod GTest::gtest_main)
+gtest_discover_tests(naming_trie_test)
+
+add_executable(logger_test tests/logger_test.cpp)
+target_link_libraries(logger_test PRIVATE logger_mod GTest::gtest_main)
+gtest_discover_tests(logger_test)

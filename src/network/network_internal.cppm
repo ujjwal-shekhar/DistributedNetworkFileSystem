@@ -2,6 +2,7 @@ module;
 
 #include <arpa/inet.h>
 #include <expected>
+#include <netdb.h>
 #include <netinet/in.h>
 #include <string>
 #include <sys/socket.h>
@@ -48,13 +49,21 @@ std::expected<size_t, Error> Socket::receive(void *buffer,
   return static_cast<size_t>(bytes);
 }
 
-std::expected<Socket, Error> Socket::accept() const noexcept {
+std::expected<std::pair<Socket, std::string>, Error> Socket::accept() const noexcept {
   if (!is_valid())
     return std::unexpected(Error::AcceptFailed);
-  int client_fd = ::accept(fd_, nullptr, nullptr);
+  
+  sockaddr_in client_addr{};
+  socklen_t client_len = sizeof(client_addr);
+  int client_fd = ::accept(fd_, (struct sockaddr *)&client_addr, &client_len);
+  
   if (client_fd <= Socket::INVALID)
     return std::unexpected(Error::AcceptFailed);
-  return Socket(client_fd);
+  
+  char ip[INET_ADDRSTRLEN];
+  inet_ntop(AF_INET, &client_addr.sin_addr, ip, INET_ADDRSTRLEN);
+  
+  return std::make_pair(Socket(client_fd), std::string(ip));
 }
 
 std::expected<int, Error> Socket::get_port() const noexcept {
@@ -91,25 +100,30 @@ export std::expected<Socket, Error> create_server_socket(int port) {
   return Socket(fd);
 }
 
-export std::expected<Socket, Error> connect_to_server(const std::string &ip,
+export std::expected<Socket, Error> connect_to_server(const std::string &host,
                                                       int port) {
-  int fd = socket(AF_INET, SOCK_STREAM, 0);
-  if (fd <= Socket::INVALID)
+  struct addrinfo hints {}, *res;
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_STREAM;
+
+  std::string port_str = std::to_string(port);
+  if (getaddrinfo(host.c_str(), port_str.c_str(), &hints, &res) != 0) {
+    return std::unexpected(Error::ConnectFailed);
+  }
+
+  int fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+  if (fd <= Socket::INVALID) {
+    freeaddrinfo(res);
     return std::unexpected(Error::CreationFailed);
+  }
 
-  sockaddr_in addr{};
-  addr.sin_family = AF_INET;
-  addr.sin_port = htons(port);
-  if (inet_pton(AF_INET, ip.c_str(), &addr.sin_addr) <= 0) {
+  if (connect(fd, res->ai_addr, res->ai_addrlen) == -1) {
     close(fd);
+    freeaddrinfo(res);
     return std::unexpected(Error::ConnectFailed);
   }
 
-  if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
-    close(fd);
-    return std::unexpected(Error::ConnectFailed);
-  }
-
+  freeaddrinfo(res);
   return Socket(fd);
 }
 

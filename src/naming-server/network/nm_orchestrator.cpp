@@ -73,7 +73,7 @@ struct NamingServer::Impl {
     return {};
   }
 
-  void ss_connection_handler(network::Socket ss_sock, std::stop_token st) {
+  void ss_connection_handler(network::Socket ss_sock, std::string peer_ip, std::stop_token st) {
     commands::ServerDetails details;
     auto recv_res = network::receive_all(ss_sock, &details, sizeof(details));
     if (!recv_res) {
@@ -83,9 +83,14 @@ struct NamingServer::Impl {
       return;
     }
 
+    // Use detected IP if the reported one is localhost
+    if (std::string(details.ip) == "127.0.0.1" || std::string(details.ip).empty()) {
+        std::strncpy(details.ip, peer_ip.c_str(), sizeof(details.ip) - 1);
+    }
+    
     int assigned_id = service.register_server(details);
     logger::info("Registered Storage Server ID: " +
-                 std::to_string(assigned_id));
+                 std::to_string(assigned_id) + " at " + details.ip);
 
     (void)network::send_all(ss_sock, &assigned_id, sizeof(assigned_id));
 
@@ -126,17 +131,18 @@ struct NamingServer::Impl {
 
     auto &listen_sock = *listen_sock_res;
     while (!st.stop_requested()) {
-      auto ss_sock_res = listen_sock.accept();
-      if (!ss_sock_res)
+      auto accept_res = listen_sock.accept();
+      if (!accept_res)
         continue;
 
-      logger::info("Naming Server: Accepted connection from Storage Server.");
+      auto [ss_sock, peer_ip] = std::move(*accept_res);
+      logger::info("Naming Server: Accepted connection from SS at " + peer_ip);
 
       ss_handlers.emplace_back(
-          [this](std::stop_token st_inner, network::Socket sock) {
-            ss_connection_handler(std::move(sock), st_inner);
+          [this, ip = peer_ip](std::stop_token st_inner, network::Socket sock) {
+            ss_connection_handler(std::move(sock), ip, st_inner);
           },
-          std::move(*ss_sock_res));
+          std::move(ss_sock));
 
       if (ss_handlers.size() > 100) {
         ss_handlers.remove_if(
@@ -317,15 +323,17 @@ struct NamingServer::Impl {
 
     auto &listen_sock = *listen_sock_res;
     while (!st.stop_requested()) {
-      auto client_sock_res = listen_sock.accept();
-      if (!client_sock_res)
+      auto accept_res = listen_sock.accept();
+      if (!accept_res)
         continue;
+
+      auto [cl_sock, peer_ip] = std::move(*accept_res);
 
       ss_handlers.emplace_back(
           [this](std::stop_token st_inner, network::Socket sock) {
             client_handler(std::move(sock), st_inner);
           },
-          std::move(*client_sock_res));
+          std::move(cl_sock));
     }
   }
 };

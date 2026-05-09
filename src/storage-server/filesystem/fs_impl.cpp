@@ -20,6 +20,12 @@ namespace fs = std::filesystem;
 
 std::expected<void, Error> FileSystem::create_file(std::string_view path) {
   try {
+    fs::path p{std::string(path)};
+    if (p.has_parent_path()) {
+      std::error_code ec;
+      fs::create_directories(p.parent_path(), ec);
+    }
+
     if (fs::exists(path)) {
       logger::warn("FileSystem: File already exists: " + std::string(path));
       return std::unexpected(Error::AlreadyExists);

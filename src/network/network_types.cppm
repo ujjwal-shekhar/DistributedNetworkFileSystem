@@ -2,6 +2,8 @@ module;
 
 #include <cstddef>
 #include <expected>
+#include <string>
+#include <utility>
 
 export module network:types;
 
@@ -41,7 +43,7 @@ public:
                                                   size_t size) const noexcept;
   [[nodiscard]] std::expected<size_t, Error>
   receive(void *buffer, size_t size) const noexcept;
-  [[nodiscard]] std::expected<Socket, Error> accept() const noexcept;
+  [[nodiscard]] std::expected<std::pair<Socket, std::string>, Error> accept() const noexcept;
 
 private:
   int fd_;

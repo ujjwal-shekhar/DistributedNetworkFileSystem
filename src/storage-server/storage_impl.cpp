@@ -41,11 +41,11 @@ struct StorageServer::Impl {
     auto &listen_sock = *listen_sock_res;
 
     while (!st.stop_requested()) {
-      auto client_sock_res = listen_sock.accept();
-      if (!client_sock_res)
+      auto accept_res = listen_sock.accept();
+      if (!accept_res)
         continue;
 
-      auto &client_sock = *client_sock_res;
+      auto& [client_sock, peer_ip] = *accept_res;
       commands::ClientRequest request;
       auto recv_res =
           network::receive_all(client_sock, &request, sizeof(request));
@@ -111,11 +111,11 @@ struct StorageServer::Impl {
     auto &listen_sock = *listen_sock_res;
 
     while (!st.stop_requested()) {
-      auto client_sock_res = listen_sock.accept();
-      if (!client_sock_res)
+      auto accept_res = listen_sock.accept();
+      if (!accept_res)
         continue;
 
-      auto &client_sock = *client_sock_res;
+      auto& [client_sock, peer_ip] = *accept_res;
       commands::ClientRequest request;
       auto recv_res =
           network::receive_all(client_sock, &request, sizeof(request));
@@ -157,17 +157,30 @@ struct StorageServer::Impl {
   }
 
   void registration_task(int nm_port, int client_port) {
-    logger::info("Storage Server: Registering with Naming Server at " +
+    logger::info("Storage Server: Attempting to register with Naming Server at " +
                  config.nm_ip + ":5049");
 
-    auto sock_res = network::connect_to_server(config.nm_ip, 5049);
-    if (!sock_res) {
-      logger::error("Storage Server: Failed to connect to Naming Server for "
-                    "registration.");
+    int retries = 0;
+    const int max_retries = 10;
+    
+    while (retries < max_retries) {
+      auto sock_res = network::connect_to_server(config.nm_ip, 5049);
+      if (sock_res) {
+        registration_sock = std::move(*sock_res);
+        break;
+      }
+      
+      retries++;
+      logger::warn("Storage Server: Failed to connect to Naming Server (attempt " + 
+                   std::to_string(retries) + "/" + std::to_string(max_retries) + "). Retrying in 2s...");
+      std::this_thread::sleep_for(std::chrono::seconds(2));
+    }
+
+    if (!registration_sock) {
+      logger::error("Storage Server: Exhausted registration retries. Exiting.");
       return;
     }
 
-    registration_sock = std::move(*sock_res);
     auto &sock = *registration_sock;
 
     commands::ServerDetails details{
