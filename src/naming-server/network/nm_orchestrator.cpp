@@ -73,6 +73,75 @@ struct NamingServer::Impl {
     return {};
   }
 
+  void trigger_redundancy_check() {
+    logger::info("Naming Server: Triggering dynamic redundancy check...");
+    auto under_replicated = service.get_under_replicated_paths(replication_factor);
+    
+    if (under_replicated.empty()) {
+      logger::info("Naming Server: All paths satisfy replication factor.");
+      return;
+    }
+
+    auto online_ids = service.get_online_server_ids();
+
+    for (const auto& task : under_replicated) {
+      int needed = replication_factor - static_cast<int>(task.current_online_servers.size());
+      if (needed <= 0) continue;
+
+      // Find candidate servers that don't have this path yet
+      std::vector<int> candidates;
+      for (int id : online_ids) {
+        bool already_has = false;
+        for (int source_id : task.current_online_servers) {
+          if (id == source_id) {
+            already_has = true;
+            break;
+          }
+        }
+        if (!already_has) candidates.push_back(id);
+      }
+
+      if (candidates.empty()) {
+        logger::warn("Naming Server: No candidate servers available to replicate " + task.path);
+        continue;
+      }
+
+      std::shuffle(candidates.begin(), candidates.end(), std::mt19937{std::random_device{}()});
+      int to_add = std::min(needed, static_cast<int>(candidates.size()));
+
+      for (int i = 0; i < to_add; ++i) {
+        int target_id = candidates[i];
+        auto target_details = service.get_server_details(target_id);
+        if (!target_details) continue;
+
+        if (task.is_file) {
+          // Instruct one of the current online sources to push the file to the target
+          int source_id = task.current_online_servers[0];
+          commands::ClientRequest req{};
+          req.command = commands::Command::REPLICATE_FILE;
+          std::strncpy(req.arg1, task.path.c_str(), sizeof(req.arg1) - 1);
+          
+          std::string target_info = std::string(target_details->ip) + ":" + std::to_string(target_details->port_client);
+          std::strncpy(req.arg2, target_info.c_str(), sizeof(req.arg2) - 1);
+
+          if (send_to_ss(source_id, req)) {
+            service.add_server_to_path(task.path, target_id);
+            logger::info("Naming Server: Successfully replicated " + task.path + " from SS " + std::to_string(source_id) + " to SS " + std::to_string(target_id));
+          }
+        } else {
+          // For directories, just instruct the target to create it
+          commands::ClientRequest req{};
+          req.command = commands::Command::CREATE_DIR;
+          std::strncpy(req.arg1, task.path.c_str(), sizeof(req.arg1) - 1);
+          if (send_to_ss(target_id, req)) {
+            service.add_server_to_path(task.path, target_id);
+            logger::info("Naming Server: Created directory " + task.path + " on SS " + std::to_string(target_id));
+          }
+        }
+      }
+    }
+  }
+
   void ss_connection_handler(network::Socket ss_sock, std::string peer_ip, std::stop_token st) {
     commands::ServerDetails details;
     auto recv_res = network::receive_all(ss_sock, &details, sizeof(details));
@@ -116,6 +185,7 @@ struct NamingServer::Impl {
     service.mark_server_offline(assigned_id);
     logger::warn("Storage Server ID " + std::to_string(assigned_id) +
                  " went offline.");
+    trigger_redundancy_check();
   }
 
   void storage_server_listener(std::stop_token st) {

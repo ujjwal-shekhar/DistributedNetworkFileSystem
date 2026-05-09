@@ -21,6 +21,12 @@ export import :server;
 
 namespace naming {
 
+export struct ReplicationTask {
+  std::string path;
+  bool is_file;
+  std::vector<int> current_online_servers;
+};
+
 export class NamingService {
 public:
   NamingService();
@@ -36,6 +42,10 @@ public:
   void remove_path(std::string_view path);
 
   [[nodiscard]] std::vector<std::string> list_all() const;
+
+  [[nodiscard]] std::vector<ReplicationTask>
+  get_under_replicated_paths(int target_replication) const;
+  void add_server_to_path(std::string_view path, int server_id);
 
   int register_server(const commands::ServerDetails &details);
   void mark_server_offline(int server_id);

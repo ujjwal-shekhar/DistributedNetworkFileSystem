@@ -50,6 +50,59 @@ std::vector<std::string> NamingService::list_all() const {
   return results;
 }
 
+void get_under_replicated_recursive(const TrieNode &node, std::string current_path,
+                                    int target_replication,
+                                    const std::unordered_map<int, commands::ServerDetails>& storage_servers,
+                                    std::vector<ReplicationTask> &results) {
+  if (node.is_end_of_word) {
+    std::vector<int> online_sources;
+    for (int id : node.server_ids) {
+      auto it = storage_servers.find(id);
+      if (it != storage_servers.end() && it->second.online) {
+        online_sources.push_back(id);
+      }
+    }
+    if (!online_sources.empty() && static_cast<int>(online_sources.size()) < target_replication) {
+      results.push_back({current_path, node.is_file, online_sources});
+    }
+  }
+  for (const auto &[c, child] : node.children) {
+    get_under_replicated_recursive(*child, current_path + c, target_replication, storage_servers, results);
+  }
+}
+
+std::vector<ReplicationTask>
+NamingService::get_under_replicated_paths(int target_replication) const {
+  std::shared_lock lock(impl_->trie_mutex);
+  std::vector<ReplicationTask> results;
+  get_under_replicated_recursive(impl_->root, "", target_replication, impl_->storage_servers, results);
+  return results;
+}
+
+void NamingService::add_server_to_path(std::string_view path, int server_id) {
+  std::unique_lock lock(impl_->trie_mutex);
+  TrieNode *curr = &impl_->root;
+  for (char c : path) {
+    auto it = curr->children.find(c);
+    if (it == curr->children.end())
+      return;
+    curr = it->second.get();
+  }
+  if (curr->is_end_of_word) {
+    bool found = false;
+    for (int id : curr->server_ids) {
+      if (id == server_id) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      curr->server_ids.push_back(server_id);
+      impl_->cache.remove(path);
+    }
+  }
+}
+
 int NamingService::register_server(const commands::ServerDetails &details) {
   std::unique_lock lock(impl_->trie_mutex);
   int assigned_id = details.id;

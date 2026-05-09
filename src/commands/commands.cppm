@@ -23,7 +23,8 @@ export enum class Command {
   GET_FILE_INFO,
   READ_FILE,
   WRITE_FILE,
-  LIST_ALL
+  LIST_ALL,
+  REPLICATE_FILE,
 };
 
 export enum class PrivilegeTier { USER, PRIVILEGED, ADMIN };
@@ -58,6 +59,8 @@ export constexpr CommandMetadata get_metadata(Command cmd) {
     return {Command::WRITE_FILE, "WRITE_FILE", 10, PrivilegeTier::USER};
   case Command::LIST_ALL:
     return {Command::LIST_ALL, "LIST_ALL", 1, PrivilegeTier::USER};
+  case Command::REPLICATE_FILE:
+    return {Command::REPLICATE_FILE, "REPLICATE_FILE", 0, PrivilegeTier::ADMIN};
   }
   return {Command::LIST_ALL, "UNKNOWN", 999, PrivilegeTier::USER};
 }

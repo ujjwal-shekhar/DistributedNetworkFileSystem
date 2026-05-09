@@ -90,11 +90,45 @@ struct StorageServer::Impl {
           ack.error_code = static_cast<int>(res.error());
           logger::error("Failed to delete directory " + path + ": " + std::to_string(ack.error_code));
         }
+      } else if (request.command == commands::Command::REPLICATE_FILE) {
+        std::string target_info = request.arg2;
+        auto pos = target_info.find(':');
+        if (pos != std::string::npos) {
+          std::string host = target_info.substr(0, pos);
+          int port = std::stoi(target_info.substr(pos + 1));
+          if (!replicate_to_peer(path, host, port)) {
+            ack.status = commands::Status::Error;
+            logger::error("Failed to replicate " + path + " to " + target_info);
+          }
+        } else {
+          ack.status = commands::Status::Error;
+        }
       }
 
       locks.release_write(path);
       (void)network::send_all(client_sock, &ack, sizeof(ack));
     }
+  }
+
+  bool replicate_to_peer(std::string_view path, const std::string& host, int port) {
+    logger::info("Storage Server: Replicating " + std::string(path) + " to " + host + ":" + std::to_string(port));
+    
+    auto peer_sock_res = network::connect_to_server(host, port);
+    if (!peer_sock_res) return false;
+    auto& peer_sock = *peer_sock_res;
+
+    commands::ClientRequest push_req{};
+    push_req.command = commands::Command::WRITE_FILE;
+    std::strncpy(push_req.arg1, std::string(path).c_str(), sizeof(push_req.arg1) - 1);
+    
+    (void)network::send_all(peer_sock, &push_req, sizeof(push_req));
+    
+    auto res = FileSystem::read_file(path, peer_sock);
+    if (!res) return false;
+
+    commands::AckPacket ack;
+    auto ack_res = network::receive_all(peer_sock, &ack, sizeof(ack));
+    return ack_res && ack.status == commands::Status::Success;
   }
 
   void client_listener_task(std::stop_token st, int port) {

@@ -5,24 +5,27 @@ A high-performance, modular, and redundant distributed file system implemented u
 ## Key Features
 
 - **Modern Architecture:** Strictly organized into 6 distinct C++20 modules (`client`, `naming-server`, `storage-server`, `network`, `commands`, and `logger`).
-- **High Performance Networking:** Robust POD-based binary protocol optimized for zero-overhead transmission.
-- **Redundancy & Replication:** Automatic file and directory replication across multiple storage servers.
-- **Dynamic Scaling:** Storage servers use ephemeral ports and receive dynamic IDs from the Naming Server upon registration.
-- **Fault Tolerance:** Real-time heartbeat monitoring detects server failures and automatically redirects clients to online replicas.
+- **High Performance Networking:** Robust POD-based binary protocol with full hostname resolution support for distributed environments.
+- **Full Redundancy:** `WRITE_FILE` operations are automatically synchronized across all replicas.
+- **Fault Tolerance & Chaos Resistance:** Automatic load balancing for `READ_FILE` and connection retry logic for system stability.
+- **Recursive Operations:** Full support for `DELETE_DIR` with automatic descendant cleanup in both the trie and storage.
+- **Isolated Storage:** Storage servers automatically isolate data into unique `SS_<ID>` directories if no root is specified.
 - **Modern Concurrency:** Leverages `std::jthread`, `std::stop_token`, and condition variables for safe, efficient multi-threading.
-- **Error Handling:** Clean, functional-style error propagation using `std::expected`.
+- **Error Handling:** Clean, functional-style error propagation using `std::expected` and detailed diagnostics.
 
 ---
 
 ## Technical Stack
 
 - **Standard:** C++26 (using `g++-16`)
-- **Build System:** CMake 3.28+ with Ninja
+- **Build System:** CMake 3.30+ (for C++26 support) with Ninja
+- **Testing:** Google Test (GTest) 1.14+
+- **Virtualization:** Docker & Docker Compose for cluster simulation
 - **Language Features:** 
   - C++20 Modules & Partitions
   - Static Reflection (P2996 style)
   - `std::expected` for error handling
-  - `std::println` & `std::source_location` for advanced logging
+  - `std::println`, `std::format` & `std::source_location` for UTC-timestamped logging
   - RAII-based Socket & Thread management
 
 ---
@@ -32,8 +35,9 @@ A high-performance, modular, and redundant distributed file system implemented u
 ### Prerequisites
 
 - GCC 16+ (or any compiler with full C++20 modules support)
-- CMake 3.28+
+- CMake 3.30+
 - Ninja build system
+- Docker & Docker Compose (for simulation tests)
 
 ### Building
 ```bash
@@ -44,46 +48,56 @@ ninja
 
 ---
 
+## Testing
+
+### Unit Tests
+Logical correctness of individual modules is verified using Google Test.
+```bash
+cd build
+ctest --output-on-failure
+```
+
+### Integration & Chaos Tests
+End-to-end behavior and node-failure resilience are verified using Dockerized cluster simulations.
+```bash
+./tests/run_integration_tests.sh
+./tests/run_chaos_tests.sh
+```
+
+---
+
 ## Component Usage
 
 ### 1. Naming Server (NM)
-
-The central orchestrator that manages the file trie and tracks storage servers. It waits for a minimum number of servers before accepting clients.
-
+The central orchestrator that manages the file trie and tracks storage servers.
 ```bash
-./main_nm [min_ss] [replication_factor]
+./nm [min_ss] [replication_factor]
 ```
-
 - `min_ss`: Minimum storage servers required to start (default: 3).
 - `replication_factor`: How many servers to copy files to (default: 3).
 
 ### 2. Storage Server (SS)
-
-The data nodes that store the actual files. Run multiple instances in separate directories for redundancy.
-
+Data nodes that store the files. They automatically create isolated storage roots.
 ```bash
-./main_server [storage_root] [nm_ip] [nm_port]
+./ss [storage_root] [nm_host] [nm_port]
 ```
+- `storage_root`: (Optional) Custom root directory. Defaults to `SS_<ID>`.
+- `nm_host`: Hostname/IP of the Naming Server (default: 127.0.0.1).
 
-- `storage_root`: Local directory to use for storage (e.g., `SS1`).
-- `nm_ip`: IP of the Naming Server (default: 127.0.0.1).
-- `nm_port`: Client port of the Naming Server (default: 8080).
-
-### 3. Client
-
-The interactive CLI for performing file operations.
-
+### 3. Client (CLT)
+Interactive CLI for performing file operations.
 ```bash
-./main_client
+./clt [nm_host] [nm_port]
 ```
-
 Available commands:
-
 - `CREATE_FILE <path>`: Create a replicated file.
 - `CREATE_DIR <path>`: Create a replicated directory.
-- `READ_FILE <path>`: Read file content (transparently redirected to an online replica).
-- `WRITE_FILE <path> <data>`: Update file content.
-- `LIST_ALL`: View the merged global directory structure.
+- `READ_FILE <path>`: Read file content (load-balanced across replicas).
+- `WRITE_FILE <path> [local_path]`: 
+  - Provide `local_path` to copy a file from your machine to the DFS.
+  - Omit `local_path` to type content in the terminal (end with `END` on a new line).
+- `LIST_FILES` or `LIST_ALL`: View the merged global directory structure.
+- `DELETE_FILE <path>` / `DELETE_DIR <path>`: Redundantly remove files or entire directory trees.
 
 ---
 
@@ -91,21 +105,15 @@ Available commands:
 
 The system is built on a **Modular Micro-Kernel** approach:
 
-1. **Commands:** Shared POD structures and protocol definitions.
-2. **Network:** RAII wrapper over POSIX Sockets, abstracting FD management.
-3. **Logger:** Location-aware logging using C++20 source location.
-4. **Naming Server:** Thread-safe Trie and LRU cache for path resolution.
-5. **Storage Server:** Fine-grained path-based locking and filesystem abstraction.
-6. **Client:** High-level interactive shell for user operations.
+1. **Commands:** Shared POD structures and protocol definitions (Binary-safe).
+2. **Network:** RAII wrapper over POSIX Sockets with hostname resolution and reliable transmission.
+3. **Logger:** Location-aware logging with UTC timestamps and source location.
+4. **Naming Server:** Thread-safe Trie and LRU cache for path resolution and cluster orchestration.
+5. **Storage Server:** Fine-grained path-based locking and automatic filesystem isolation.
+6. **Client:** High-level interactive shell with connection retry logic.
 
 ---
 
-## Original Team
-
-- Anika Roy
-- Prakul Agarwal
-- Ujjwal Shekhar
-
 ## AI Collaboration
 
-This project was modernized and refactored using **Gemini CLI**, an interactive software engineering agent, focusing on C++26 standards and modular system design.
+This project was modernized, refactored, and tested using **Gemini CLI**, an interactive software engineering agent, focusing on C++26 standards, distributed robustness, and automated resilience testing.
