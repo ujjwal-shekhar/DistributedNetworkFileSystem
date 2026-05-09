@@ -1,0 +1,13 @@
+build/
+_deps/
+.git/
+.gemini/
+.geminiignore
+.gitignore
+tests/SS_*
+tests/data_*
+SS_*
+data_*
+*.o
+*.mod
+*.a

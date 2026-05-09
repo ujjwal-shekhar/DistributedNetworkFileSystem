@@ -1,0 +1,51 @@
+services:
+  nm:
+    build: .
+    image: mdnfs:latest
+    command: ["./nm", "3", "3"]
+    networks:
+      - dfs-net
+
+  ss-1:
+    image: mdnfs:latest
+    command: ["./ss", "data_1", "nm", "8080"]
+    depends_on:
+      - nm
+    networks:
+      - dfs-net
+
+  ss-2:
+    image: mdnfs:latest
+    command: ["./ss", "data_2", "nm", "8080"]
+    depends_on:
+      - nm
+    networks:
+      - dfs-net
+
+  ss-3:
+    image: mdnfs:latest
+    command: ["./ss", "data_3", "nm", "8080"]
+    depends_on:
+      - nm
+    networks:
+      - dfs-net
+
+  ss-4:
+    image: mdnfs:latest
+    command: ["./ss", "data_4", "nm", "8080"]
+    depends_on:
+      - nm
+    networks:
+      - dfs-net
+
+  ss-5:
+    image: mdnfs:latest
+    command: ["./ss", "data_5", "nm", "8080"]
+    depends_on:
+      - nm
+    networks:
+      - dfs-net
+
+networks:
+  dfs-net:
+    driver: bridge
