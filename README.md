@@ -5,13 +5,14 @@ A high-performance, modular, and redundant distributed file system implemented u
 ## Key Features
 
 - **Modern Architecture:** Strictly organized into 6 distinct C++20 modules (`client`, `naming-server`, `storage-server`, `network`, `commands`, and `logger`).
-- **High Performance Networking:** Robust POD-based binary protocol with full hostname resolution support for distributed environments.
-- **Full Redundancy:** `WRITE_FILE` operations are automatically synchronized across all replicas.
-- **Fault Tolerance & Chaos Resistance:** Automatic load balancing for `READ_FILE` and connection retry logic for system stability.
-- **Recursive Operations:** Full support for `DELETE_DIR` with automatic descendant cleanup in both the trie and storage.
-- **Isolated Storage:** Storage servers automatically isolate data into unique `SS_<ID>` directories if no root is specified.
-- **Modern Concurrency:** Leverages `std::jthread`, `std::stop_token`, and condition variables for safe, efficient multi-threading.
-- **Error Handling:** Clean, functional-style error propagation using `std::expected` and detailed diagnostics.
+- **High Performance Networking:** Robust POD-based binary protocol with full hostname resolution support for distributed environments (Docker-ready).
+- **Dynamic Redundancy (Auto-Healing):** Naming Server automatically detects node failures and orchestrates SS-to-SS re-replication to maintain the target replication factor.
+- **Full Synchronization:** `WRITE_FILE` operations are automatically synchronized across all online replicas.
+- **Fault Tolerance & Chaos Resistance:** Automatic load balancing for `READ_FILE` and robust connection retry logic across all components.
+- **Recursive Operations:** Full support for `DELETE_DIR` with automatic descendant cleanup in both the trie and physical storage.
+- **Isolated Storage:** Storage servers automatically isolate data into unique `SS_<ID>` directories based on Naming Server assignment.
+- **Modern Concurrency:** Leverages `std::jthread`, `std::stop_token`, and fine-grained path-based locking for safe, high-concurrency access.
+- **Error Handling:** Clean, functional-style error propagation using `std::expected` and detailed distributed diagnostics.
 
 ---
 
@@ -51,17 +52,18 @@ ninja
 ## Testing
 
 ### Unit Tests
-Logical correctness of individual modules is verified using Google Test.
+Logical correctness of individual modules is verified using an extensive Google Test suite (14+ tests).
 ```bash
 cd build
 ctest --output-on-failure
 ```
 
-### Integration & Chaos Tests
+### Integration, Chaos & Auto-Healing Tests
 End-to-end behavior and node-failure resilience are verified using Dockerized cluster simulations.
 ```bash
 ./tests/run_integration_tests.sh
 ./tests/run_chaos_tests.sh
+./tests/run_auto_heal_test.sh
 ```
 
 ---
@@ -74,7 +76,7 @@ The central orchestrator that manages the file trie and tracks storage servers.
 ./nm [min_ss] [replication_factor]
 ```
 - `min_ss`: Minimum storage servers required to start (default: 3).
-- `replication_factor`: How many servers to copy files to (default: 3).
+- `replication_factor`: Target copies for every file (default: 3).
 
 ### 2. Storage Server (SS)
 Data nodes that store the files. They automatically create isolated storage roots.
@@ -97,6 +99,7 @@ Available commands:
   - Provide `local_path` to copy a file from your machine to the DFS.
   - Omit `local_path` to type content in the terminal (end with `END` on a new line).
 - `LIST_FILES` or `LIST_ALL`: View the merged global directory structure.
+- `GET_FILE_INFO <path>`: View replica locations, SS IDs, and network details.
 - `DELETE_FILE <path>` / `DELETE_DIR <path>`: Redundantly remove files or entire directory trees.
 
 ---
@@ -106,9 +109,9 @@ Available commands:
 The system is built on a **Modular Micro-Kernel** approach:
 
 1. **Commands:** Shared POD structures and protocol definitions (Binary-safe).
-2. **Network:** RAII wrapper over POSIX Sockets with hostname resolution and reliable transmission.
+2. **Network:** RAII wrapper over POSIX Sockets with hostname resolution and reliable `send_all`/`receive_all` primitives.
 3. **Logger:** Location-aware logging with UTC timestamps and source location.
-4. **Naming Server:** Thread-safe Trie and LRU cache for path resolution and cluster orchestration.
+4. **Naming Server:** Thread-safe Trie and LRU cache for path resolution and cluster orchestration (Auto-healing controller).
 5. **Storage Server:** Fine-grained path-based locking and automatic filesystem isolation.
 6. **Client:** High-level interactive shell with connection retry logic.
 
