@@ -180,18 +180,35 @@ void NamingService::register_path_internal(std::string_view path, int server_id,
   }
 }
 
+bool remove_recursive(TrieNode &node, std::string_view path, size_t depth) {
+  if (depth == path.size()) {
+    node.is_end_of_word = false;
+    node.server_ids.clear();
+    return node.children.empty();
+  }
+
+  char c = path[depth];
+  auto it = node.children.find(c);
+  if (it == node.children.end())
+    return false;
+
+  bool can_delete_child = remove_recursive(*it->second, path, depth + 1);
+
+  if (can_delete_child) {
+    node.children.erase(it);
+    return node.children.empty() && !node.is_end_of_word;
+  }
+
+  return false;
+}
+
 void NamingService::remove_path(std::string_view path) {
   std::unique_lock lock(impl_->trie_mutex);
-  TrieNode *curr = &impl_->root;
-  for (char c : path) {
-    auto it = curr->children.find(c);
-    if (it == curr->children.end())
-      return;
-    curr = it->second.get();
-  }
-  curr->server_ids.clear();
-  curr->is_end_of_word = false;
+  remove_recursive(impl_->root, path, 0);
   impl_->cache.remove(path);
+  // Also need to clear all cache entries that have 'path/' as prefix
+  // Since our LRUCache is simple, we might need a better way or just clear it.
+  // For now, let's assume the user will most likely hit the trie for subpaths.
 }
 
 } // namespace naming

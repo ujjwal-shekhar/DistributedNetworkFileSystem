@@ -84,6 +84,12 @@ struct StorageServer::Impl {
           ack.error_code = static_cast<int>(res.error());
           logger::error("Failed to delete file " + path + ": " + std::to_string(ack.error_code));
         }
+      } else if (request.command == commands::Command::DELETE_DIR) {
+        if (auto res = FileSystem::delete_directory(path); !res) {
+          ack.status = commands::Status::Error;
+          ack.error_code = static_cast<int>(res.error());
+          logger::error("Failed to delete directory " + path + ": " + std::to_string(ack.error_code));
+        }
       }
 
       locks.release_write(path);

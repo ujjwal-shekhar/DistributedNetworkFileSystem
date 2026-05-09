@@ -221,6 +221,19 @@ struct NamingServer::Impl {
             }
           }
           if (any_success) {
+            if (request.command == commands::Command::DELETE_DIR) {
+              // For directories, we need to remove all descendants from the trie
+              auto all_files = service.list_all();
+              std::string prefix = std::string(request.arg1);
+              if (!prefix.empty() && prefix.back() != '/') {
+                prefix += "/";
+              }
+              for (const auto& f : all_files) {
+                if (f.starts_with(prefix)) {
+                  service.remove_path(f);
+                }
+              }
+            }
             service.remove_path(request.arg1);
             commands::AckPacket ack{.status = commands::Status::Success};
             (void)network::send_all(client_sock, &ack, sizeof(ack));
