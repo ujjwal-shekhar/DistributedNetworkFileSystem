@@ -13,3 +13,4 @@ bin/
 
 *.md
 !README.md
+!GEMINI.md

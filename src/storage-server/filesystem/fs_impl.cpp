@@ -32,12 +32,14 @@ std::expected<void, Error> FileSystem::create_file(std::string_view path) {
     }
     std::ofstream file{std::string(path)};
     if (!file) {
-      logger::error("FileSystem: Failed to open file for writing: " + std::string(path));
+      logger::error("FileSystem: Failed to open file for writing: " +
+                    std::string(path));
       return std::unexpected(Error::OperationFailed);
     }
     return {};
   } catch (const std::exception &e) {
-    logger::error("FileSystem: Exception in create_file: " + std::string(e.what()));
+    logger::error("FileSystem: Exception in create_file: " +
+                  std::string(e.what()));
     return std::unexpected(Error::OperationFailed);
   } catch (...) {
     logger::error("FileSystem: Unknown exception in create_file");
@@ -54,7 +56,8 @@ std::expected<void, Error> FileSystem::create_directory(std::string_view path) {
   if (fs::create_directories(path, ec))
     return {};
   if (ec) {
-    logger::error("FileSystem: Failed to create directory " + std::string(path) + ": " + ec.message());
+    logger::error("FileSystem: Failed to create directory " +
+                  std::string(path) + ": " + ec.message());
     return std::unexpected(Error::OperationFailed);
   }
   return {};
@@ -131,7 +134,7 @@ FileSystem::write_file(std::string_view path,
     if (packet.size > 0) {
       file.write(packet.chunk, packet.size);
     }
-    
+
     if (packet.is_last)
       break;
   }

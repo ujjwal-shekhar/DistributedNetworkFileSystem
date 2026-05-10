@@ -49,20 +49,21 @@ std::expected<size_t, Error> Socket::receive(void *buffer,
   return static_cast<size_t>(bytes);
 }
 
-std::expected<std::pair<Socket, std::string>, Error> Socket::accept() const noexcept {
+std::expected<std::pair<Socket, std::string>, Error>
+Socket::accept() const noexcept {
   if (!is_valid())
     return std::unexpected(Error::AcceptFailed);
-  
+
   sockaddr_in client_addr{};
   socklen_t client_len = sizeof(client_addr);
   int client_fd = ::accept(fd_, (struct sockaddr *)&client_addr, &client_len);
-  
+
   if (client_fd <= Socket::INVALID)
     return std::unexpected(Error::AcceptFailed);
-  
+
   char ip[INET_ADDRSTRLEN];
   inet_ntop(AF_INET, &client_addr.sin_addr, ip, INET_ADDRSTRLEN);
-  
+
   return std::make_pair(Socket(client_fd), std::string(ip));
 }
 
@@ -102,7 +103,8 @@ export std::expected<Socket, Error> create_server_socket(int port) {
 
 export std::expected<Socket, Error> connect_to_server(const std::string &host,
                                                       int port) {
-  struct addrinfo hints {}, *res;
+  struct addrinfo hints {
+  }, *res;
   hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM;
 

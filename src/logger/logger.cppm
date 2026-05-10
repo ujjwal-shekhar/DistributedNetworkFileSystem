@@ -20,4 +20,6 @@ void error(std::string_view message, const std::source_location location =
 void debug(std::string_view message, const std::source_location location =
                                          std::source_location::current());
 
+void set_log_file(std::string_view path);
+
 } // namespace logger

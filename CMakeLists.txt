@@ -79,6 +79,12 @@ target_sources(client_mod
     PUBLIC FILE_SET CXX_MODULES FILES 
         src/client/client.cppm
         src/client/client_types.cppm
+        src/client/client_utils.cppm
+        src/client/client_prompt.cppm
+        src/client/client_warp.cppm
+        src/client/client_peek.cppm
+        src/client/client_pastevents.cppm
+        src/client/client_input.cppm
 )
 target_link_libraries(client_mod PUBLIC commands_mod network_mod naming_mod logger_mod)
 

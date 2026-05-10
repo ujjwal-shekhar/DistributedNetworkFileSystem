@@ -7,12 +7,18 @@ module;
 export module client;
 
 export import :types;
+export import :utils;
+export import :prompt;
+export import :warp;
+export import :peek;
+export import :pastevents;
+export import :input;
 
 export namespace client {
 
 class Client {
 public:
-  Client();
+  explicit Client(size_t history_size = 5);
   ~Client();
 
   Client(const Client &) = delete;

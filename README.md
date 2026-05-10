@@ -87,11 +87,21 @@ Data nodes that store the files. They automatically create isolated storage root
 - `nm_host`: Hostname/IP of the Naming Server (default: 127.0.0.1).
 
 ### 3. Client (CLT)
-Interactive CLI for performing file operations.
+Modernized interactive shell (C-Shell style) for performing file operations.
 ```bash
-./clt [nm_host] [nm_port]
+./clt [nm_host] [nm_port] [--history-size N]
 ```
-Available commands:
+**Shell Features:**
+- **Custom Prompt:** `<user@host:cwd> [status]`, colorized based on the last command's outcome.
+- **VFS Navigation:** `warp <path>` changes the logical current working directory within the DNFS.
+- **History Navigation:** Use **Up/Down arrows** to navigate through `pastevents` history (Terminal Raw Mode).
+- **Command Delimiters:** Support for `;`, `&`, and `&&` to run multiple commands in sequence.
+- **Client-side Translation:** `peek [path]` translates to the DNFS `LIST_ALL` command relative to the logical CWD.
+
+**Available Commands:**
+- `warp <path>`: Change logical current working directory.
+- `peek [path]`: List files in the logical directory.
+- `pastevents [purge|execute <idx>]`: Manage or execute commands from the shell history.
 - `CREATE_FILE <path>`: Create a replicated file.
 - `CREATE_DIR <path>`: Create a replicated directory.
 - `READ_FILE <path>`: Read file content (load-balanced across replicas).
@@ -101,6 +111,7 @@ Available commands:
 - `LIST_FILES` or `LIST_ALL`: View the merged global directory structure.
 - `GET_FILE_INFO <path>`: View replica locations, SS IDs, and network details.
 - `DELETE_FILE <path>` / `DELETE_DIR <path>`: Redundantly remove files or entire directory trees.
+- `help`: Display the interactive help menu.
 
 ---
 

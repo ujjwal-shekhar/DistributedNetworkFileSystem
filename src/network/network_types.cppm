@@ -31,7 +31,9 @@ public:
   Socket(const Socket &) = delete;
   Socket &operator=(const Socket &) = delete;
 
-  Socket(Socket &&other) noexcept : fd_(other.fd_) { other.fd_ = Socket::INVALID; }
+  Socket(Socket &&other) noexcept : fd_(other.fd_) {
+    other.fd_ = Socket::INVALID;
+  }
 
   Socket &operator=(Socket &&other) noexcept;
 
@@ -43,7 +45,8 @@ public:
                                                   size_t size) const noexcept;
   [[nodiscard]] std::expected<size_t, Error>
   receive(void *buffer, size_t size) const noexcept;
-  [[nodiscard]] std::expected<std::pair<Socket, std::string>, Error> accept() const noexcept;
+  [[nodiscard]] std::expected<std::pair<Socket, std::string>, Error>
+  accept() const noexcept;
 
 private:
   int fd_;

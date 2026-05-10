@@ -45,7 +45,7 @@ struct StorageServer::Impl {
       if (!accept_res)
         continue;
 
-      auto& [client_sock, peer_ip] = *accept_res;
+      auto &[client_sock, peer_ip] = *accept_res;
       commands::ClientRequest request;
       auto recv_res =
           network::receive_all(client_sock, &request, sizeof(request));
@@ -54,8 +54,8 @@ struct StorageServer::Impl {
         continue;
       }
 
-      logger::info("Storage Server: Received command " + 
-                   std::string(commands::get_metadata(request.command).name) + 
+      logger::info("Storage Server: Received command " +
+                   std::string(commands::get_metadata(request.command).name) +
                    " for path: " + std::string(request.arg1));
 
       std::string path = request.arg1;
@@ -70,25 +70,29 @@ struct StorageServer::Impl {
         if (auto res = FileSystem::create_directory(path); !res) {
           ack.status = commands::Status::Error;
           ack.error_code = static_cast<int>(res.error());
-          logger::error("Failed to create directory " + path + ": " + std::to_string(ack.error_code));
+          logger::error("Failed to create directory " + path + ": " +
+                        std::to_string(ack.error_code));
         }
       } else if (request.command == commands::Command::CREATE_FILE) {
         if (auto res = FileSystem::create_file(path); !res) {
           ack.status = commands::Status::Error;
           ack.error_code = static_cast<int>(res.error());
-          logger::error("Failed to create file " + path + ": " + std::to_string(ack.error_code));
+          logger::error("Failed to create file " + path + ": " +
+                        std::to_string(ack.error_code));
         }
       } else if (request.command == commands::Command::DELETE_FILE) {
         if (auto res = FileSystem::delete_file(path); !res) {
           ack.status = commands::Status::Error;
           ack.error_code = static_cast<int>(res.error());
-          logger::error("Failed to delete file " + path + ": " + std::to_string(ack.error_code));
+          logger::error("Failed to delete file " + path + ": " +
+                        std::to_string(ack.error_code));
         }
       } else if (request.command == commands::Command::DELETE_DIR) {
         if (auto res = FileSystem::delete_directory(path); !res) {
           ack.status = commands::Status::Error;
           ack.error_code = static_cast<int>(res.error());
-          logger::error("Failed to delete directory " + path + ": " + std::to_string(ack.error_code));
+          logger::error("Failed to delete directory " + path + ": " +
+                        std::to_string(ack.error_code));
         }
       } else if (request.command == commands::Command::REPLICATE_FILE) {
         std::string target_info = request.arg2;
@@ -110,21 +114,26 @@ struct StorageServer::Impl {
     }
   }
 
-  bool replicate_to_peer(std::string_view path, const std::string& host, int port) {
-    logger::info("Storage Server: Replicating " + std::string(path) + " to " + host + ":" + std::to_string(port));
-    
+  bool replicate_to_peer(std::string_view path, const std::string &host,
+                         int port) {
+    logger::info("Storage Server: Replicating " + std::string(path) + " to " +
+                 host + ":" + std::to_string(port));
+
     auto peer_sock_res = network::connect_to_server(host, port);
-    if (!peer_sock_res) return false;
-    auto& peer_sock = *peer_sock_res;
+    if (!peer_sock_res)
+      return false;
+    auto &peer_sock = *peer_sock_res;
 
     commands::ClientRequest push_req{};
     push_req.command = commands::Command::WRITE_FILE;
-    std::strncpy(push_req.arg1, std::string(path).c_str(), sizeof(push_req.arg1) - 1);
-    
+    std::strncpy(push_req.arg1, std::string(path).c_str(),
+                 sizeof(push_req.arg1) - 1);
+
     (void)network::send_all(peer_sock, &push_req, sizeof(push_req));
-    
+
     auto res = FileSystem::read_file(path, peer_sock);
-    if (!res) return false;
+    if (!res)
+      return false;
 
     commands::AckPacket ack;
     auto ack_res = network::receive_all(peer_sock, &ack, sizeof(ack));
@@ -149,7 +158,7 @@ struct StorageServer::Impl {
       if (!accept_res)
         continue;
 
-      auto& [client_sock, peer_ip] = *accept_res;
+      auto &[client_sock, peer_ip] = *accept_res;
       commands::ClientRequest request;
       auto recv_res =
           network::receive_all(client_sock, &request, sizeof(request));
@@ -158,8 +167,8 @@ struct StorageServer::Impl {
         continue;
       }
 
-      logger::info("Storage Server: Received command " + 
-                   std::string(commands::get_metadata(request.command).name) + 
+      logger::info("Storage Server: Received command " +
+                   std::string(commands::get_metadata(request.command).name) +
                    " for path: " + std::string(request.arg1));
 
       std::string path = request.arg1;
@@ -173,7 +182,8 @@ struct StorageServer::Impl {
         if (auto res = FileSystem::read_file(path, client_sock); !res) {
           ack.status = commands::Status::Error;
           ack.error_code = static_cast<int>(res.error());
-          logger::error("Failed to read file " + path + ": " + std::to_string(ack.error_code));
+          logger::error("Failed to read file " + path + ": " +
+                        std::to_string(ack.error_code));
         }
         locks.release_read(path);
       } else if (request.command == commands::Command::WRITE_FILE) {
@@ -181,7 +191,8 @@ struct StorageServer::Impl {
         if (auto res = FileSystem::write_file(path, client_sock); !res) {
           ack.status = commands::Status::Error;
           ack.error_code = static_cast<int>(res.error());
-          logger::error("Failed to write file " + path + ": " + std::to_string(ack.error_code));
+          logger::error("Failed to write file " + path + ": " +
+                        std::to_string(ack.error_code));
         }
         locks.release_write(path);
       }
@@ -191,22 +202,25 @@ struct StorageServer::Impl {
   }
 
   void registration_task(int nm_port, int client_port) {
-    logger::info("Storage Server: Attempting to register with Naming Server at " +
-                 config.nm_ip + ":5049");
+    logger::info(
+        "Storage Server: Attempting to register with Naming Server at " +
+        config.nm_ip + ":5049");
 
     int retries = 0;
     const int max_retries = 10;
-    
+
     while (retries < max_retries) {
       auto sock_res = network::connect_to_server(config.nm_ip, 5049);
       if (sock_res) {
         registration_sock = std::move(*sock_res);
         break;
       }
-      
+
       retries++;
-      logger::warn("Storage Server: Failed to connect to Naming Server (attempt " + 
-                   std::to_string(retries) + "/" + std::to_string(max_retries) + "). Retrying in 2s...");
+      logger::warn(
+          "Storage Server: Failed to connect to Naming Server (attempt " +
+          std::to_string(retries) + "/" + std::to_string(max_retries) +
+          "). Retrying in 2s...");
       std::this_thread::sleep_for(std::chrono::seconds(2));
     }
 
@@ -275,7 +289,8 @@ std::expected<void, Error> StorageServer::start() {
   impl_->registration_task(nm_port, client_port);
 
   if (impl_->assigned_id == -1) {
-    logger::error("Storage Server: Registration failed, cannot start listeners.");
+    logger::error(
+        "Storage Server: Registration failed, cannot start listeners.");
     return std::unexpected(Error::NetworkError);
   }
 

@@ -1,5 +1,6 @@
 module;
 
+#include <chrono>
 #include <cstring>
 #include <expected>
 #include <fstream>
@@ -10,10 +11,15 @@ module;
 #include <string>
 #include <string_view>
 #include <thread>
-#include <chrono>
 #include <vector>
 
 module client;
+
+import :utils;
+import :prompt;
+import :warp;
+import :peek;
+import :pastevents;
 
 import network;
 import naming_server;
@@ -25,57 +31,170 @@ namespace client {
 struct Client::Impl {
   std::optional<network::Socket> ns_socket;
   Session session;
+  pastevents::History history;
+  std::string logical_cwd = "/";
+  ShellStatus last_status = ShellStatus::Success;
 
-  std::expected<void, Error> process_command(std::string_view line) {
+  explicit Impl(size_t history_size) : history(history_size) {}
+
+  std::expected<void, Error> process_line(std::string_view line) {
+    if (utils::contains_pipe(line) || utils::contains_redirect(line)) {
+      std::cout << "\033[1;31mError: Pipes and redirections are not supported "
+                   "in Phase 1.\033[0m\n";
+      last_status = ShellStatus::Error;
+      return {};
+    }
+
+    auto commands_list = utils::split_commands(line);
+    for (const auto &cmd_str : commands_list) {
+      if (cmd_str.empty())
+        continue;
+      history.add(cmd_str);
+
+      // Default to Success for each command, but let process_single_command
+      // override it
+      last_status = ShellStatus::Success;
+
+      auto res = process_single_command(cmd_str);
+      if (!res) {
+        logger::error("Command failed: " + cmd_str);
+        last_status = ShellStatus::Error;
+      }
+    }
+    return {};
+  }
+
+  std::expected<void, Error> process_single_command(std::string_view line) {
     std::stringstream ss(std::string{line});
     std::string cmd_str;
     ss >> cmd_str;
 
+    if (cmd_str == "warp") {
+      std::string path;
+      if (!(ss >> path))
+        path = "~";
+      logical_cwd = warp::execute(logical_cwd, path);
+      return {};
+    }
+
+    if (cmd_str == "peek") {
+      commands::ClientRequest request{};
+      request.command = peek::get_translated_command();
+      std::string arg;
+      if (!(ss >> arg))
+        arg = ".";
+
+      std::string resolved = utils::resolve_path(logical_cwd, arg);
+      std::strncpy(request.arg1, resolved.c_str(), sizeof(request.arg1) - 1);
+      return handle_user_command(request);
+    }
+
+    if (cmd_str == "pastevents") {
+      std::string sub;
+      if (!(ss >> sub)) {
+        for (const auto &event : history.get_all()) {
+          std::cout << event << "\n";
+        }
+      } else if (sub == "purge") {
+        history.purge();
+        std::cout << "History purged.\n";
+      } else if (sub == "execute") {
+        int index;
+        if (ss >> index) {
+          std::string cmd = history.get_by_index(index);
+          if (!cmd.empty()) {
+            std::cout << "Executing: " << cmd << "\n";
+            return process_single_command(cmd);
+          } else {
+            std::cout << "Invalid index.\n";
+            last_status = ShellStatus::Error;
+          }
+        }
+      }
+      return {};
+    }
+
+    if (cmd_str == "help") {
+      display_help();
+      return {};
+    }
+
     auto cmd_opt = commands::string_to_command(cmd_str);
-    if (!cmd_opt)
-      return std::unexpected(Error::InvalidCommand);
+    if (!cmd_opt) {
+      display_help();
+      last_status = ShellStatus::Warning;
+      return {};
+    }
 
     commands::Command cmd = *cmd_opt;
     auto meta = commands::get_metadata(cmd);
 
     commands::ClientRequest request{};
     request.command = cmd;
-    
-    std::string arg;
-    if (ss >> arg) {
-      std::strncpy(request.arg1, arg.c_str(), sizeof(request.arg1) - 1);
+
+    std::string arg1, arg2;
+    if (ss >> arg1) {
+      std::string resolved = utils::resolve_path(logical_cwd, arg1);
+      std::strncpy(request.arg1, resolved.c_str(), sizeof(request.arg1) - 1);
     }
-    if (ss >> arg) {
-      std::strncpy(request.arg2, arg.c_str(), sizeof(request.arg2) - 1);
+    if (ss >> arg2) {
+      std::string resolved = utils::resolve_path(logical_cwd, arg2);
+      std::strncpy(request.arg2, resolved.c_str(), sizeof(request.arg2) - 1);
     }
 
     switch (meta.tier) {
     case commands::PrivilegeTier::USER: {
       auto res = handle_user_command(request);
       if (res)
-        std::cout << "Command Success.\n";
-      else
-        std::cout << "Command Failed.\n";
+        std::cout << "\033[1;32mCommand Success.\033[0m\n";
+      else {
+        std::cout << "\033[1;31mCommand Failed.\033[0m\n";
+        last_status = ShellStatus::Error;
+      }
       return res;
     }
     case commands::PrivilegeTier::PRIVILEGED: {
       auto res = handle_privileged_command(request);
       if (res)
-        std::cout << "Command Success.\n";
-      else
-        std::cout << "Command Failed.\n";
+        std::cout << "\033[1;32mCommand Success.\033[0m\n";
+      else {
+        std::cout << "\033[1;31mCommand Failed.\033[0m\n";
+        last_status = ShellStatus::Error;
+      }
       return res;
     }
     case commands::PrivilegeTier::ADMIN: {
       auto res = handle_admin_command(request);
       if (res)
-        std::cout << "Command Success.\n";
-      else
-        std::cout << "Command Failed.\n";
+        std::cout << "\033[1;32mCommand Success.\033[0m\n";
+      else {
+        std::cout << "\033[1;31mCommand Failed.\033[0m\n";
+        last_status = ShellStatus::Error;
+      }
       return res;
     }
     }
     return {};
+  }
+
+  void display_help() {
+    std::cout << "Available Commands:\n";
+    std::cout << "  warp <path>       : Change local directory (client-side)\n";
+    std::cout << "  peek [path]       : List files in directory (DNFS)\n";
+    std::cout << "  pastevents        : Show command history\n";
+    std::cout << "  pastevents purge  : Clear command history\n";
+    std::cout << "  pastevents execute <idx> : Execute cmd from history\n";
+    std::cout << "  help              : Show this help message\n";
+    std::cout << "  LIST_ALL          : List all files\n";
+    std::cout << "  READ_FILE <path>  : Read file content\n";
+    std::cout << "  WRITE_FILE <p1> [p2] : Write to file\n";
+    std::cout << "  CREATE_FILE <path> : Create a new file\n";
+    std::cout << "  CREATE_DIR <path>  : Create a new directory\n";
+    std::cout << "  DELETE_FILE <path> : Delete a file\n";
+    std::cout << "  DELETE_DIR <path>  : Delete a directory\n";
+    std::cout << "  GET_FILE_INFO <path> : Get file metadata\n";
+    std::cout << "  FAIL_SERVER       : Simulate server failure (Admin)\n";
+    std::cout << "  exit              : Exit the shell\n";
   }
 
   std::expected<void, Error>
@@ -159,8 +278,8 @@ struct Client::Impl {
       std::cout << "File: " << request.arg1 << "\n";
       std::cout << "Replica count: " << replicas.size() << "\n";
       for (const auto &ss : replicas) {
-        std::cout << " - " << ss.ip << ":" << ss.port_client << " (SS ID: "
-                  << ss.id << ")\n";
+        std::cout << " - " << ss.ip << ":" << ss.port_client
+                  << " (SS ID: " << ss.id << ")\n";
       }
       return {};
     }
@@ -268,23 +387,25 @@ struct Client::Impl {
   }
 };
 
-Client::Client() : impl_(std::make_unique<Impl>()) {}
+Client::Client(size_t history_size)
+    : impl_(std::make_unique<Impl>(history_size)) {}
 Client::~Client() = default;
 
 std::expected<void, Error> Client::connect(std::string_view ip, int port) {
   int retries = 0;
   const int max_retries = 10;
-  
+
   while (retries < max_retries) {
     auto sock_res = network::connect_to_server(std::string(ip), port);
     if (sock_res) {
       impl_->ns_socket = std::move(*sock_res);
       return {};
     }
-    
+
     retries++;
-    logger::warn("Client: Failed to connect to Naming Server (attempt " + 
-                 std::to_string(retries) + "/" + std::to_string(max_retries) + "). Retrying in 2s...");
+    logger::warn("Client: Failed to connect to Naming Server (attempt " +
+                 std::to_string(retries) + "/" + std::to_string(max_retries) +
+                 "). Retrying in 2s...");
     std::this_thread::sleep_for(std::chrono::seconds(2));
   }
 
@@ -292,16 +413,18 @@ std::expected<void, Error> Client::connect(std::string_view ip, int port) {
 }
 
 std::expected<void, Error> Client::run_interactive_loop() {
-  std::string line;
   while (true) {
-    std::cout << "DFS> " << std::flush;
-    if (!std::getline(std::cin, line) || line == "exit")
+    std::string prompt_str =
+        prompt::get_prompt(impl_->logical_cwd, impl_->last_status);
+    std::string line = input::read_line(impl_->history, prompt_str);
+
+    if (line == "exit")
       break;
-    
+
     if (line.empty() || line.find_first_not_of(" \t\n\r") == std::string::npos)
       continue;
 
-    auto res = impl_->process_command(line);
+    auto res = impl_->process_line(line);
     if (!res)
       logger::error("Command failed.");
   }

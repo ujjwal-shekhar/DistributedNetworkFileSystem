@@ -15,6 +15,8 @@ enum class Error {
   FileNotFound,
 };
 
+enum class ShellStatus { Success, Error, Warning };
+
 struct Session {
   std::string client_id;
   int remaining_tokens = 0;

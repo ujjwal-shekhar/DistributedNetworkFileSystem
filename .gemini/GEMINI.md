@@ -19,6 +19,7 @@
 - Use 2 spaces for indentation.
 - Avoid `std::endl` (use `\n`).
 - A lot of the old C-style string handling is being done here. Upgrade it to modern `string_view` where possible, fallback to `std::string` otherwise.
+- You CANNOT use `exec*` directly anywhere in the project. This applies to all system calls in the exec family.
 - Prefer `consteval` over `constexpr`, and `constexpr` over others.
 - The current design makes the client "logout" in a way by exiting the executable, implement some form of rate-limiting with limited tokens, with each job having corresponding tokens. The naming server obviously maintains the limits for each client.
 - The client has a special admin mode for which a password should be required. For now, let it be a hardcoded value that the naming server checks for. The admin can send "fail server" queries and has infinite tokens.

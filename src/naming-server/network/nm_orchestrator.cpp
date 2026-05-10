@@ -75,8 +75,9 @@ struct NamingServer::Impl {
 
   void trigger_redundancy_check() {
     logger::info("Naming Server: Triggering dynamic redundancy check...");
-    auto under_replicated = service.get_under_replicated_paths(replication_factor);
-    
+    auto under_replicated =
+        service.get_under_replicated_paths(replication_factor);
+
     if (under_replicated.empty()) {
       logger::info("Naming Server: All paths satisfy replication factor.");
       return;
@@ -84,9 +85,11 @@ struct NamingServer::Impl {
 
     auto online_ids = service.get_online_server_ids();
 
-    for (const auto& task : under_replicated) {
-      int needed = replication_factor - static_cast<int>(task.current_online_servers.size());
-      if (needed <= 0) continue;
+    for (const auto &task : under_replicated) {
+      int needed = replication_factor -
+                   static_cast<int>(task.current_online_servers.size());
+      if (needed <= 0)
+        continue;
 
       // Find candidate servers that don't have this path yet
       std::vector<int> candidates;
@@ -98,35 +101,44 @@ struct NamingServer::Impl {
             break;
           }
         }
-        if (!already_has) candidates.push_back(id);
+        if (!already_has)
+          candidates.push_back(id);
       }
 
       if (candidates.empty()) {
-        logger::warn("Naming Server: No candidate servers available to replicate " + task.path);
+        logger::warn(
+            "Naming Server: No candidate servers available to replicate " +
+            task.path);
         continue;
       }
 
-      std::shuffle(candidates.begin(), candidates.end(), std::mt19937{std::random_device{}()});
+      std::shuffle(candidates.begin(), candidates.end(),
+                   std::mt19937{std::random_device{}()});
       int to_add = std::min(needed, static_cast<int>(candidates.size()));
 
       for (int i = 0; i < to_add; ++i) {
         int target_id = candidates[i];
         auto target_details = service.get_server_details(target_id);
-        if (!target_details) continue;
+        if (!target_details)
+          continue;
 
         if (task.is_file) {
-          // Instruct one of the current online sources to push the file to the target
+          // Instruct one of the current online sources to push the file to the
+          // target
           int source_id = task.current_online_servers[0];
           commands::ClientRequest req{};
           req.command = commands::Command::REPLICATE_FILE;
           std::strncpy(req.arg1, task.path.c_str(), sizeof(req.arg1) - 1);
-          
-          std::string target_info = std::string(target_details->ip) + ":" + std::to_string(target_details->port_client);
+
+          std::string target_info = std::string(target_details->ip) + ":" +
+                                    std::to_string(target_details->port_client);
           std::strncpy(req.arg2, target_info.c_str(), sizeof(req.arg2) - 1);
 
           if (send_to_ss(source_id, req)) {
             service.add_server_to_path(task.path, target_id);
-            logger::info("Naming Server: Successfully replicated " + task.path + " from SS " + std::to_string(source_id) + " to SS " + std::to_string(target_id));
+            logger::info("Naming Server: Successfully replicated " + task.path +
+                         " from SS " + std::to_string(source_id) + " to SS " +
+                         std::to_string(target_id));
           }
         } else {
           // For directories, just instruct the target to create it
@@ -135,14 +147,16 @@ struct NamingServer::Impl {
           std::strncpy(req.arg1, task.path.c_str(), sizeof(req.arg1) - 1);
           if (send_to_ss(target_id, req)) {
             service.add_server_to_path(task.path, target_id);
-            logger::info("Naming Server: Created directory " + task.path + " on SS " + std::to_string(target_id));
+            logger::info("Naming Server: Created directory " + task.path +
+                         " on SS " + std::to_string(target_id));
           }
         }
       }
     }
   }
 
-  void ss_connection_handler(network::Socket ss_sock, std::string peer_ip, std::stop_token st) {
+  void ss_connection_handler(network::Socket ss_sock, std::string peer_ip,
+                             std::stop_token st) {
     commands::ServerDetails details;
     auto recv_res = network::receive_all(ss_sock, &details, sizeof(details));
     if (!recv_res) {
@@ -153,10 +167,11 @@ struct NamingServer::Impl {
     }
 
     // Use detected IP if the reported one is localhost
-    if (std::string(details.ip) == "127.0.0.1" || std::string(details.ip).empty()) {
-        std::strncpy(details.ip, peer_ip.c_str(), sizeof(details.ip) - 1);
+    if (std::string(details.ip) == "127.0.0.1" ||
+        std::string(details.ip).empty()) {
+      std::strncpy(details.ip, peer_ip.c_str(), sizeof(details.ip) - 1);
     }
-    
+
     int assigned_id = service.register_server(details);
     logger::info("Registered Storage Server ID: " +
                  std::to_string(assigned_id) + " at " + details.ip);
@@ -244,9 +259,12 @@ struct NamingServer::Impl {
         }
       } else if (request.command == commands::Command::CREATE_FILE ||
                  request.command == commands::Command::CREATE_DIR) {
-        if (auto find_res = service.find_storage_server(request.arg1); find_res) {
-          logger::warn("Naming Server: Path already exists: " + std::string(request.arg1));
-          commands::AckPacket ack{.status = commands::Status::Error, .error_code = 409};
+        if (auto find_res = service.find_storage_server(request.arg1);
+            find_res) {
+          logger::warn("Naming Server: Path already exists: " +
+                       std::string(request.arg1));
+          commands::AckPacket ack{.status = commands::Status::Error,
+                                  .error_code = 409};
           (void)network::send_all(client_sock, &ack, sizeof(ack));
           continue;
         }
@@ -283,7 +301,8 @@ struct NamingServer::Impl {
           logger::info("Created " + std::string(request.arg1) + " on " +
                        std::to_string(factor) + " servers.");
         } else {
-          commands::AckPacket ack{.status = commands::Status::Error, .error_code = 1};
+          commands::AckPacket ack{.status = commands::Status::Error,
+                                  .error_code = 1};
           (void)network::send_all(client_sock, &ack, sizeof(ack));
         }
       } else if (request.command == commands::Command::DELETE_FILE ||
@@ -298,13 +317,14 @@ struct NamingServer::Impl {
           }
           if (any_success) {
             if (request.command == commands::Command::DELETE_DIR) {
-              // For directories, we need to remove all descendants from the trie
+              // For directories, we need to remove all descendants from the
+              // trie
               auto all_files = service.list_all();
               std::string prefix = std::string(request.arg1);
               if (!prefix.empty() && prefix.back() != '/') {
                 prefix += "/";
               }
-              for (const auto& f : all_files) {
+              for (const auto &f : all_files) {
                 if (f.starts_with(prefix)) {
                   service.remove_path(f);
                 }
@@ -314,11 +334,13 @@ struct NamingServer::Impl {
             commands::AckPacket ack{.status = commands::Status::Success};
             (void)network::send_all(client_sock, &ack, sizeof(ack));
           } else {
-            commands::AckPacket ack{.status = commands::Status::Error, .error_code = 4};
+            commands::AckPacket ack{.status = commands::Status::Error,
+                                    .error_code = 4};
             (void)network::send_all(client_sock, &ack, sizeof(ack));
           }
         } else {
-          commands::AckPacket ack{.status = commands::Status::Error, .error_code = 3};
+          commands::AckPacket ack{.status = commands::Status::Error,
+                                  .error_code = 3};
           (void)network::send_all(client_sock, &ack, sizeof(ack));
         }
       } else {
@@ -346,18 +368,20 @@ struct NamingServer::Impl {
               commands::AckPacket ack{.status = commands::Status::Success};
               ack.extra_count = 1;
               (void)network::send_all(client_sock, &ack, sizeof(ack));
-              
+
               std::shuffle(online_replicas.begin(), online_replicas.end(),
                            std::mt19937{std::random_device{}()});
               (void)network::send_all(client_sock, &online_replicas[0],
                                       sizeof(online_replicas[0]));
             }
           } else {
-            commands::AckPacket ack{.status = commands::Status::Error, .error_code = 2};
+            commands::AckPacket ack{.status = commands::Status::Error,
+                                    .error_code = 2};
             (void)network::send_all(client_sock, &ack, sizeof(ack));
           }
         } else {
-          commands::AckPacket ack{.status = commands::Status::Error, .error_code = 3};
+          commands::AckPacket ack{.status = commands::Status::Error,
+                                  .error_code = 3};
           (void)network::send_all(client_sock, &ack, sizeof(ack));
         }
       }
