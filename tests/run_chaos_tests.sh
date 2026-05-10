@@ -40,14 +40,20 @@ exit
 EOF
 
 echo "Testing creation of a new file with remaining servers..."
-docker compose run --rm nm bash -c "./clt nm 8080" <<EOF
+docker compose run --rm nm bash -c "./clt nm 8080" <<EOF > chaos_output.log 2>&1
 CREATE_FILE new_after_chaos.txt
 WRITE_FILE new_after_chaos.txt
 Data created after partial failure.
 END
-LIST_FILES
+peek
 READ_FILE new_after_chaos.txt
 exit
 EOF
+
+cat chaos_output.log
+if grep -q "v_v/\*" chaos_output.log; then
+    echo "Error status detected in chaos test. FAILED."
+    exit 1
+fi
 
 echo "Chaos Tests Completed Successfully."

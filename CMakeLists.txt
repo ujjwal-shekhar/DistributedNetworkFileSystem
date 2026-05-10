@@ -120,3 +120,7 @@ gtest_discover_tests(storage_test)
 add_executable(network_test tests/unit/network_test.cpp)
 target_link_libraries(network_test PRIVATE network_mod logger_mod GTest::gtest_main)
 gtest_discover_tests(network_test)
+
+add_executable(client_test tests/unit/client_test.cpp)
+target_link_libraries(client_test PRIVATE client_mod naming_mod commands_mod network_mod logger_mod GTest::gtest_main)
+gtest_discover_tests(client_test)

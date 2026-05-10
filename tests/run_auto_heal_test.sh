@@ -68,15 +68,15 @@ if [ "$NEW_REPLICA_COUNT" -ne 3 ]; then
     exit 1
 fi
 
-# Final check: can we still read the data from the new replica set?
 echo "5. Verifying data integrity..."
 docker compose run --rm nm bash -c "./clt nm 8080" <<EOF > final_read.log 2>&1
 READ_FILE heal_test.txt
 exit
 EOF
 
-if ! grep -q "This data must be auto-healed" final_read.log; then
-    echo "Error: Data corruption or read failure after healing. Test FAILED."
+cat final_read.log
+if ! grep -q "This data must be auto-healed" final_read.log || grep -q "v_v/\*" final_read.log; then
+    echo "Error: Data corruption or error status detected after healing. Test FAILED."
     exit 1
 fi
 

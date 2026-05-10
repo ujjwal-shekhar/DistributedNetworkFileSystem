@@ -31,15 +31,16 @@ WRITE_FILE root_file.txt
 Content in the root file.
 END
 CREATE_DIR sub_dir
-CREATE_FILE sub_dir/nested_file.txt
-WRITE_FILE sub_dir/nested_file.txt
+warp sub_dir
+CREATE_FILE nested_file.txt
+WRITE_FILE nested_file.txt
 This is nested content for redundancy.
 END
-LIST_FILES
-READ_FILE root_file.txt
-READ_FILE sub_dir/nested_file.txt
+peek
+warp ..
+peek
 DELETE_DIR sub_dir
-LIST_FILES
+peek
 exit
 EOF
 then
@@ -52,8 +53,8 @@ fi
 
 cat test_output.log
 
-if grep -qi "Command Failed" test_output.log || grep -qi "\[ERROR\]" test_output.log; then
-    echo "Detected command failure in output. Integration Test FAILED."
+if grep -qi "Command Failed" test_output.log || grep -qi "\[ERROR\]" test_output.log || grep -q "v_v/\*" test_output.log; then
+    echo "Detected command failure or error status in output. Integration Test FAILED."
     docker compose logs
     exit 1
 fi

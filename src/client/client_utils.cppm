@@ -30,11 +30,16 @@ export std::string resolve_path(std::string_view current_cwd,
     result = "/" + result;
 
   // Simple check to prevent escaping root
-  if (result.find("/..") == 0)
-    return "/";
+  if (result.find("/..") == 0) return "/";
+
+  // Trim trailing slash if not root
+  if (result.size() > 1 && result.back() == '/') {
+      result.pop_back();
+  }
 
   return result;
-}
+  }
+
 
 export std::vector<std::string> split_commands(std::string_view input) {
   std::vector<std::string> commands;
