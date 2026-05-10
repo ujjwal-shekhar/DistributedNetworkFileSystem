@@ -28,6 +28,7 @@ struct NamingServer::Impl {
   std::atomic<bool> running{false};
   std::vector<std::jthread> listeners;
   std::list<std::jthread> ss_handlers;
+  std::list<std::jthread> js_handlers;
 
   std::mutex registration_mutex;
   std::condition_variable registration_cv;
@@ -203,6 +204,44 @@ struct NamingServer::Impl {
     trigger_redundancy_check();
   }
 
+  void js_connection_handler(network::Socket js_sock, std::string peer_ip,
+                             std::stop_token st) {
+    commands::ServerDetails details;
+    auto recv_res = network::receive_all(js_sock, &details, sizeof(details));
+    if (!recv_res) {
+      logger::error(
+          "Naming Server: Failed to receive registration details from "
+          "Job Server.");
+      return;
+    }
+
+    if (std::string(details.ip) == "127.0.0.1" ||
+        std::string(details.ip).empty()) {
+      std::strncpy(details.ip, peer_ip.c_str(), sizeof(details.ip) - 1);
+    }
+
+    int assigned_id = service.register_job_server(details);
+    logger::info("Registered Job Server ID: " + std::to_string(assigned_id) +
+                 " at " + details.ip);
+
+    (void)network::send_all(js_sock, &assigned_id, sizeof(assigned_id));
+
+    // Monitor for disconnection
+    char dummy;
+    while (!st.stop_requested()) {
+      auto r = js_sock.receive(&dummy, 1);
+      if (r && *r == 0)
+        break;
+      if (!r)
+        break;
+      std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+
+    service.mark_job_server_offline(assigned_id);
+    logger::warn("Job Server ID " + std::to_string(assigned_id) +
+                 " went offline.");
+  }
+
   void storage_server_listener(std::stop_token st) {
     logger::info("Naming Server: Listening for Storage Servers on port " +
                  std::to_string(config.nm_ss_reg_port));
@@ -236,6 +275,39 @@ struct NamingServer::Impl {
     }
   }
 
+  void job_server_listener(std::stop_token st) {
+    logger::info("Naming Server: Listening for Job Servers on port " +
+                 std::to_string(config.nm_js_reg_port));
+
+    auto listen_sock_res = network::create_server_socket(config.nm_js_reg_port);
+    if (!listen_sock_res) {
+      logger::error("Naming Server: Failed to bind JS registration port " +
+                    std::to_string(config.nm_js_reg_port));
+      return;
+    }
+
+    auto &listen_sock = *listen_sock_res;
+    while (!st.stop_requested()) {
+      auto accept_res = listen_sock.accept();
+      if (!accept_res)
+        continue;
+
+      auto [js_sock, peer_ip] = std::move(*accept_res);
+      logger::info("Naming Server: Accepted connection from JS at " + peer_ip);
+
+      js_handlers.emplace_back(
+          [this, ip = peer_ip](std::stop_token st_inner, network::Socket sock) {
+            js_connection_handler(std::move(sock), ip, st_inner);
+          },
+          std::move(js_sock));
+
+      if (js_handlers.size() > 100) {
+        js_handlers.remove_if(
+            [](const std::jthread &t) { return !t.joinable(); });
+      }
+    }
+  }
+
   void client_handler(network::Socket client_sock, std::stop_token st) {
     while (!st.stop_requested()) {
       commands::ClientRequest request;
@@ -244,6 +316,70 @@ struct NamingServer::Impl {
       if (!recv_res) {
         // Connection closed or error
         break;
+      }
+
+      if (request.command == commands::Command::SUBMIT_JOB) {
+        auto online_js_ids = service.get_online_job_server_ids();
+        if (online_js_ids.empty()) {
+          logger::error("Naming Server: No Job Servers online to handle task.");
+          commands::AckPacket ack{.status = commands::Status::Error,
+                                  .error_code = 503};
+          (void)network::send_all(client_sock, &ack, sizeof(ack));
+          continue;
+        }
+
+        // Randomly pick a JS
+        std::shuffle(online_js_ids.begin(), online_js_ids.end(),
+                     std::mt19937{std::random_device{}()});
+        int selected_js_id = online_js_ids[0];
+        auto js_details = service.get_job_server_details(selected_js_id);
+
+        if (!js_details) {
+          commands::AckPacket ack{.status = commands::Status::Error};
+          (void)network::send_all(client_sock, &ack, sizeof(ack));
+          continue;
+        }
+
+        // Forward task to JS
+        auto js_sock_res =
+            network::connect_to_server(js_details->ip, js_details->port_nm);
+        if (!js_sock_res) {
+          logger::error("Naming Server: Failed to connect to JS ID " +
+                        std::to_string(selected_js_id));
+          commands::AckPacket ack{.status = commands::Status::Error};
+          (void)network::send_all(client_sock, &ack, sizeof(ack));
+          continue;
+        }
+
+        commands::ClientRequest task_req = request;
+        task_req.command = commands::Command::EXECUTE_TASK;
+        (void)network::send_all(*js_sock_res, &task_req, sizeof(task_req));
+
+        // Read payload (command line and target file)
+        commands::JobPayload payload;
+        (void)network::receive_all(client_sock, &payload, sizeof(payload));
+        (void)network::send_all(*js_sock_res, &payload, sizeof(payload));
+
+        // Wait for JS to complete and relay the response stream
+        commands::AckPacket js_ack;
+        auto recv_js_ack =
+            network::receive_all(*js_sock_res, &js_ack, sizeof(js_ack));
+        (void)network::send_all(client_sock, &js_ack, sizeof(js_ack));
+
+        if (recv_js_ack && js_ack.status == commands::Status::Success) {
+          // Relay output packets
+          commands::FilePacket packet;
+          while (true) {
+            auto r =
+                network::receive_all(*js_sock_res, &packet, sizeof(packet));
+            if (!r)
+              break;
+            (void)network::send_all(client_sock, &packet, sizeof(packet));
+            if (packet.is_last)
+              break;
+          }
+        }
+        continue;
       }
 
       if (request.command == commands::Command::LIST_ALL) {
@@ -447,6 +583,8 @@ std::expected<void, Error> NamingServer::start(int min_ss,
   impl_->listeners.emplace_back(
       [this](std::stop_token st) { impl_->storage_server_listener(st); });
   impl_->listeners.emplace_back(
+      [this](std::stop_token st) { impl_->job_server_listener(st); });
+  impl_->listeners.emplace_back(
       [this](std::stop_token st) { impl_->client_listener(st); });
   return {};
 }
@@ -455,6 +593,7 @@ void NamingServer::stop() {
   impl_->running = false;
   impl_->listeners.clear();
   impl_->ss_handlers.clear();
+  impl_->js_handlers.clear();
 }
 
 } // namespace naming

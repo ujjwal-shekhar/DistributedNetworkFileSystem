@@ -24,6 +24,7 @@ struct NamingService::Impl {
   LRUCache cache{1024};
   ClientManager client_manager;
   std::unordered_map<int, commands::ServerDetails> storage_servers;
+  std::unordered_map<int, commands::ServerDetails> job_servers;
 };
 
 NamingService::NamingService() : impl_(std::make_unique<Impl>()) {}
@@ -164,6 +165,58 @@ NamingService::get_server_details(int server_id) {
   if (it != impl_->storage_servers.end())
     return it->second;
   return std::nullopt;
+}
+
+int NamingService::register_job_server(const commands::ServerDetails &details) {
+  std::unique_lock lock(impl_->trie_mutex);
+  int assigned_id = details.id;
+  if (assigned_id == -1) {
+    assigned_id = static_cast<int>(impl_->job_servers.size() +
+                                   1001); // JS IDs start at 1001
+  }
+
+  commands::ServerDetails updated_details = details;
+  updated_details.id = assigned_id;
+  updated_details.online = true;
+  impl_->job_servers[assigned_id] = updated_details;
+  return assigned_id;
+}
+
+void NamingService::mark_job_server_offline(int server_id) {
+  std::unique_lock lock(impl_->trie_mutex);
+  auto it = impl_->job_servers.find(server_id);
+  if (it != impl_->job_servers.end()) {
+    it->second.online = false;
+  }
+}
+
+std::vector<int> NamingService::get_online_job_server_ids() const {
+  std::shared_lock lock(impl_->trie_mutex);
+  std::vector<int> ids;
+  for (const auto &[id, details] : impl_->job_servers) {
+    if (details.online)
+      ids.push_back(id);
+  }
+  return ids;
+}
+
+std::optional<commands::ServerDetails>
+NamingService::get_job_server_details(int server_id) {
+  std::shared_lock lock(impl_->trie_mutex);
+  auto it = impl_->job_servers.find(server_id);
+  if (it != impl_->job_servers.end())
+    return it->second;
+  return std::nullopt;
+}
+
+size_t NamingService::count_online_job_servers() const noexcept {
+  std::shared_lock lock(impl_->trie_mutex);
+  size_t count = 0;
+  for (const auto &[id, details] : impl_->job_servers) {
+    if (details.online)
+      count++;
+  }
+  return count;
 }
 
 std::expected<std::vector<int>, Error>

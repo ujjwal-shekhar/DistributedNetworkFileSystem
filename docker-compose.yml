@@ -46,6 +46,22 @@ services:
     networks:
       - dfs-net
 
+  js-1:
+    image: mdnfs:latest
+    command: ["./js", "nm", "6051"]
+    depends_on:
+      - nm
+    networks:
+      - dfs-net
+
+  js-2:
+    image: mdnfs:latest
+    command: ["./js", "nm", "6051"]
+    depends_on:
+      - nm
+    networks:
+      - dfs-net
+
 networks:
   dfs-net:
     driver: bridge

@@ -25,6 +25,10 @@ export enum class Command {
   WRITE_FILE,
   LIST_ALL,
   REPLICATE_FILE,
+  JS_REGISTER,
+  JS_HEARTBEAT,
+  SUBMIT_JOB,
+  EXECUTE_TASK,
 };
 
 export enum class PrivilegeTier { USER, PRIVILEGED, ADMIN };
@@ -61,6 +65,14 @@ export constexpr CommandMetadata get_metadata(Command cmd) {
     return {Command::LIST_ALL, "LIST_ALL", 1, PrivilegeTier::USER};
   case Command::REPLICATE_FILE:
     return {Command::REPLICATE_FILE, "REPLICATE_FILE", 0, PrivilegeTier::ADMIN};
+  case Command::JS_REGISTER:
+    return {Command::JS_REGISTER, "JS_REGISTER", 0, PrivilegeTier::USER};
+  case Command::JS_HEARTBEAT:
+    return {Command::JS_HEARTBEAT, "JS_HEARTBEAT", 0, PrivilegeTier::USER};
+  case Command::SUBMIT_JOB:
+    return {Command::SUBMIT_JOB, "SUBMIT_JOB", 50, PrivilegeTier::USER};
+  case Command::EXECUTE_TASK:
+    return {Command::EXECUTE_TASK, "EXECUTE_TASK", 0, PrivilegeTier::USER};
   }
   return {Command::LIST_ALL, "UNKNOWN", 999, PrivilegeTier::USER};
 }
@@ -87,6 +99,8 @@ string_to_command(std::string_view s) {
     return Command::WRITE_FILE;
   if (s == "LIST_ALL" || s == "LIST_FILES")
     return Command::LIST_ALL;
+  if (s == "SUBMIT_JOB" || s == "job")
+    return Command::SUBMIT_JOB;
   return std::nullopt;
 }
 
@@ -95,6 +109,7 @@ export struct Config {
   int nm_clt_port = 8080;
   int nm_ss_reg_port = 5049;
   int nm_ss_comm_port = 4050;
+  int nm_js_reg_port = 6051; // New port for Job Server registration
 };
 
 export struct ClientDetails {
@@ -102,6 +117,7 @@ export struct ClientDetails {
 };
 
 export constexpr size_t MAX_ARG_LEN = 256;
+export constexpr size_t MAX_ARGS_COUNT = 16;
 export constexpr size_t MAX_PATH_LEN = 256;
 export constexpr size_t MAX_PATHS = 10;
 export constexpr size_t MAX_IP_LEN = 64;
@@ -112,6 +128,11 @@ export struct ClientRequest {
   Command command;
   char arg1[MAX_ARG_LEN];
   char arg2[MAX_ARG_LEN];
+};
+
+export struct JobPayload {
+  char command_line[MAX_ARG_LEN];
+  char target_file[MAX_PATH_LEN];
 };
 
 export struct ServerDetails {

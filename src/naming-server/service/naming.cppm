@@ -55,6 +55,13 @@ public:
   [[nodiscard]] std::optional<commands::ServerDetails>
   get_server_details(int server_id);
 
+  int register_job_server(const commands::ServerDetails &details);
+  void mark_job_server_offline(int server_id);
+  [[nodiscard]] std::vector<int> get_online_job_server_ids() const;
+  [[nodiscard]] std::optional<commands::ServerDetails>
+  get_job_server_details(int server_id);
+  [[nodiscard]] size_t count_online_job_servers() const noexcept;
+
   [[nodiscard]] ClientManager &clients() noexcept;
 
 private:

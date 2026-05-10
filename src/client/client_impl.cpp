@@ -114,8 +114,66 @@ struct Client::Impl {
       return {};
     }
 
-    if (cmd_str == "help") {
-      display_help();
+    if (cmd_str == "job") {
+      auto tokens = utils::split_args(line);
+      if (tokens.size() < 3) {
+        std::cout << "Usage: job <command> [args...] <target_file>\n";
+        last_status = ShellStatus::Warning;
+        return {};
+      }
+
+      std::string target_file = tokens.back();
+      tokens.pop_back();            // Remove file
+      tokens.erase(tokens.begin()); // Remove "job"
+
+      std::string full_cmd;
+      for (size_t i = 0; i < tokens.size(); ++i) {
+        // Re-wrap tokens that might have had spaces in them
+        if (tokens[i].find(' ') != std::string::npos) {
+          full_cmd += "\"" + tokens[i] + "\"";
+        } else {
+          full_cmd += tokens[i];
+        }
+        if (i < tokens.size() - 1)
+          full_cmd += " ";
+      }
+
+      commands::ClientRequest request{};
+      request.command = commands::Command::SUBMIT_JOB;
+
+      commands::JobPayload payload{};
+      std::strncpy(payload.command_line, full_cmd.c_str(),
+                   sizeof(payload.command_line) - 1);
+      std::string resolved = utils::resolve_path(logical_cwd, target_file);
+      std::strncpy(payload.target_file, resolved.c_str(),
+                   sizeof(payload.target_file) - 1);
+
+      if (!ns_socket)
+        return std::unexpected(Error::ConnectionFailed);
+      (void)network::send_all(*ns_socket, &request, sizeof(request));
+      (void)network::send_all(*ns_socket, &payload, sizeof(payload));
+
+      commands::AckPacket ack;
+      auto recv_ack = network::receive_all(*ns_socket, &ack, sizeof(ack));
+      if (!recv_ack || ack.status != commands::Status::Success) {
+        std::cout << "\033[1;31mJob Submission Failed.\033[0m\n";
+        last_status = ShellStatus::Error;
+        return std::unexpected(Error::InvalidCommand);
+      }
+
+      // Receive and print output stream
+      commands::FilePacket packet;
+      while (true) {
+        auto r = network::receive_all(*ns_socket, &packet, sizeof(packet));
+        if (!r)
+          break;
+        if (packet.size > 0) {
+          std::cout.write(packet.chunk, packet.size);
+        }
+        if (packet.is_last)
+          break;
+      }
+      std::cout << std::endl;
       return {};
     }
 
@@ -184,6 +242,7 @@ struct Client::Impl {
     std::cout << "  pastevents        : Show command history\n";
     std::cout << "  pastevents purge  : Clear command history\n";
     std::cout << "  pastevents execute <idx> : Execute cmd from history\n";
+    std::cout << "  job <cmd> [args] <file> : Execute distributed job\n";
     std::cout << "  help              : Show this help message\n";
     std::cout << "  LIST_ALL          : List all files\n";
     std::cout << "  READ_FILE <path>  : Read file content\n";

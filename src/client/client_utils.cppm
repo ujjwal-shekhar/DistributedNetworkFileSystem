@@ -30,16 +30,16 @@ export std::string resolve_path(std::string_view current_cwd,
     result = "/" + result;
 
   // Simple check to prevent escaping root
-  if (result.find("/..") == 0) return "/";
+  if (result.find("/..") == 0)
+    return "/";
 
   // Trim trailing slash if not root
   if (result.size() > 1 && result.back() == '/') {
-      result.pop_back();
+    result.pop_back();
   }
 
   return result;
-  }
-
+}
 
 export std::vector<std::string> split_commands(std::string_view input) {
   std::vector<std::string> commands;
@@ -91,6 +91,38 @@ export bool contains_pipe(std::string_view input) {
 export bool contains_redirect(std::string_view input) {
   return input.find('>') != std::string_view::npos ||
          input.find('<') != std::string_view::npos;
+}
+
+export std::vector<std::string> split_args(std::string_view input) {
+  std::vector<std::string> args;
+  std::string current;
+  bool in_quotes = false;
+  char quote_char = 0;
+
+  for (size_t i = 0; i < input.size(); ++i) {
+    char c = input[i];
+    if ((c == '"' || c == '\'') && (i == 0 || input[i - 1] != '\\')) {
+      if (in_quotes && c == quote_char) {
+        in_quotes = false;
+      } else if (!in_quotes) {
+        in_quotes = true;
+        quote_char = c;
+      } else {
+        current += c;
+      }
+    } else if (std::isspace(c) && !in_quotes) {
+      if (!current.empty()) {
+        args.push_back(current);
+        current.clear();
+      }
+    } else {
+      current += c;
+    }
+  }
+  if (!current.empty()) {
+    args.push_back(current);
+  }
+  return args;
 }
 
 } // namespace client::utils

@@ -24,7 +24,7 @@ WORKDIR /app
 COPY . .
 
 RUN /usr/bin/cmake -G Ninja -B build -DCMAKE_CXX_COMPILER=g++-16 -DCMAKE_CXX_SCAN_FOR_MODULES=ON .
-RUN /usr/bin/cmake --build build --target nm ss clt
+RUN /usr/bin/cmake --build build --target nm ss clt js
 
 FROM ubuntu:24.04
 RUN apt-get update && apt-get install -y software-properties-common && \
@@ -35,5 +35,7 @@ WORKDIR /app
 COPY --from=builder /app/build/nm .
 COPY --from=builder /app/build/ss .
 COPY --from=builder /app/build/clt .
+COPY --from=builder /app/build/js .
+
 
 CMD ["./nm", "3", "3"]

@@ -51,6 +51,7 @@ export std::string read_line(const pastevents::History &history,
     std::string line;
     if (!std::getline(std::cin, line))
       return "exit";
+    std::cout << "\n";
     return line;
   }
 

@@ -4,15 +4,15 @@ A high-performance, modular, and redundant distributed file system implemented u
 
 ## Key Features
 
-- **Modern Architecture:** Strictly organized into 6 distinct C++20 modules (`client`, `naming-server`, `storage-server`, `network`, `commands`, and `logger`).
+- **Modern Architecture:** Strictly organized into 7 distinct C++20 modules (`client`, `naming-server`, `storage-server`, `job-server`, `network`, `commands`, and `logger`).
+- **Distributed Shell:** Integrated interactive C-Shell with terminal raw mode, command history, and logical VFS navigation.
+- **Disaggregated Compute:** Dedicated Job Servers (`js`) provide stateless compute resources, separating CPU-heavy tasks from storage I/O for maximum stability.
+- **Arbitrary Job Execution:** Foundation for a distributed execution engine using `fork`/`exec` to run system binaries (`grep`, `wc`, `sort`) across the cluster.
 - **High Performance Networking:** Robust POD-based binary protocol with full hostname resolution support for distributed environments (Docker-ready).
 - **Dynamic Redundancy (Auto-Healing):** Naming Server automatically detects node failures and orchestrates SS-to-SS re-replication to maintain the target replication factor.
 - **Full Synchronization:** `WRITE_FILE` operations are automatically synchronized across all online replicas.
 - **Fault Tolerance & Chaos Resistance:** Automatic load balancing for `READ_FILE` and robust connection retry logic across all components.
-- **Recursive Operations:** Full support for `DELETE_DIR` with automatic descendant cleanup in both the trie and physical storage.
-- **Isolated Storage:** Storage servers automatically isolate data into unique `SS_<ID>` directories based on Naming Server assignment.
 - **Modern Concurrency:** Leverages `std::jthread`, `std::stop_token`, and fine-grained path-based locking for safe, high-concurrency access.
-- **Error Handling:** Clean, functional-style error propagation using `std::expected` and detailed distributed diagnostics.
 
 ---
 
@@ -20,7 +20,7 @@ A high-performance, modular, and redundant distributed file system implemented u
 
 - **Standard:** C++26 (using `g++-16`)
 - **Build System:** CMake 3.30+ (for C++26 support) with Ninja
-- **Testing:** Google Test (GTest) 1.14+
+- **Testing:** Google Test (GTest) 1.14+ (18+ tests including Client and Job partitions)
 - **Virtualization:** Docker & Docker Compose for cluster simulation
 - **Language Features:** 
   - C++20 Modules & Partitions
@@ -31,39 +31,61 @@ A high-performance, modular, and redundant distributed file system implemented u
 
 ---
 
-## Getting Started
+## Architecture Visualization
 
-### Prerequisites
+### 1. System Interaction Flow
+The following diagram illustrates how a client-initiated `job` is orchestrated across the cluster.
 
-- GCC 16+ (or any compiler with full C++20 modules support)
-- CMake 3.30+
-- Ninja build system
-- Docker & Docker Compose (for simulation tests)
+```mermaid
+graph TD
+    subgraph Client_Space [User Interface]
+        CLT[Client Shell]
+    end
 
-### Building
-```bash
-mkdir build && cd build
-cmake -G Ninja ..
-ninja
+    subgraph Control_Plane [Orchestration]
+        NM[Naming Server]
+    end
+
+    subgraph Compute_Plane [Stateless Workers]
+        JS[Job Server]
+    end
+
+    subgraph Storage_Plane [Data Nodes]
+        SS[Storage Server]
+    end
+
+    CLT -- 1. SUBMIT_JOB --> NM
+    NM -- 2. EXECUTE_TASK --> JS
+    JS -- 3. GET_FILE_INFO --> NM
+    NM -- 4. Replica Locations --> JS
+    JS -- 5. READ_FILE --> SS
+    SS -- 6. Byte Stream --> JS
+    JS -- 7. Fork/Exec Compute --> JS
+    JS -- 8. Stream Results --> NM
+    NM -- 9. Relay to Terminal --> CLT
 ```
 
----
+### 2. Disaggregated Model
+mDNFS uses a disaggregated architecture to ensure compute scaling does not impact storage performance.
 
-## Testing
+```mermaid
+graph LR
+    subgraph Compute_Layer
+        JS1[JS-1]
+        JS2[JS-2]
+    end
 
-### Unit Tests
-Logical correctness of individual modules is verified using an extensive Google Test suite (14+ tests).
-```bash
-cd build
-ctest --output-on-failure
-```
+    subgraph Network_Backbone
+        NET((High-Speed Network))
+    end
 
-### Integration, Chaos & Auto-Healing Tests
-End-to-end behavior and node-failure resilience are verified using Dockerized cluster simulations.
-```bash
-./tests/run_integration_tests.sh
-./tests/run_chaos_tests.sh
-./tests/run_auto_heal_test.sh
+    subgraph Storage_Layer
+        SS1[SS-1]
+        SS2[SS-2]
+        SS3[SS-3]
+    end
+
+    Compute_Layer <==> NET <==> Storage_Layer
 ```
 
 ---
@@ -71,47 +93,40 @@ End-to-end behavior and node-failure resilience are verified using Dockerized cl
 ## Component Usage
 
 ### 1. Naming Server (NM)
-The central orchestrator that manages the file trie and tracks storage servers.
+The central orchestrator that manages the file trie, tracks storage servers, and schedules jobs.
 ```bash
 ./nm [min_ss] [replication_factor]
 ```
-- `min_ss`: Minimum storage servers required to start (default: 3).
-- `replication_factor`: Target copies for every file (default: 3).
 
 ### 2. Storage Server (SS)
 Data nodes that store the files. They automatically create isolated storage roots.
 ```bash
 ./ss [storage_root] [nm_host] [nm_port]
 ```
-- `storage_root`: (Optional) Custom root directory. Defaults to `SS_<ID>`.
-- `nm_host`: Hostname/IP of the Naming Server (default: 127.0.0.1).
 
-### 3. Client (CLT)
-Modernized interactive shell (C-Shell style) for performing file operations.
+### 3. Job Server (JS)
+Stateless compute workers that execute arbitrary shell commands on DFS data.
+```bash
+./js [nm_host] [nm_reg_port] [nm_clt_port]
+```
+- `nm_reg_port`: Registration port for JS (default: 6051).
+- `nm_clt_port`: Metadata query port (default: 8080).
+
+### 4. Client (CLT)
+Modernized interactive shell (C-Shell style) for performing file operations and submitting jobs.
 ```bash
 ./clt [nm_host] [nm_port] [--history-size N]
 ```
-**Shell Features:**
-- **Custom Prompt:** `<user@host:cwd> [status]`, colorized based on the last command's outcome.
-- **VFS Navigation:** `warp <path>` changes the logical current working directory within the DNFS.
-- **History Navigation:** Use **Up/Down arrows** to navigate through `pastevents` history (Terminal Raw Mode).
-- **Command Delimiters:** Support for `;`, `&`, and `&&` to run multiple commands in sequence.
-- **Client-side Translation:** `peek [path]` translates to the DNFS `LIST_ALL` command relative to the logical CWD.
-
-**Available Commands:**
-- `warp <path>`: Change logical current working directory.
+Available commands:
+- `job <command> [args] <target_file>`: Execute a distributed job (e.g., `job grep "ERROR" server.log`).
+- `warp <path>`: Change logical current working directory within the DNFS.
 - `peek [path]`: List files in the logical directory.
 - `pastevents [purge|execute <idx>]`: Manage or execute commands from the shell history.
 - `CREATE_FILE <path>`: Create a replicated file.
-- `CREATE_DIR <path>`: Create a replicated directory.
 - `READ_FILE <path>`: Read file content (load-balanced across replicas).
-- `WRITE_FILE <path> [local_path]`: 
-  - Provide `local_path` to copy a file from your machine to the DFS.
-  - Omit `local_path` to type content in the terminal (end with `END` on a new line).
-- `LIST_FILES` or `LIST_ALL`: View the merged global directory structure.
-- `GET_FILE_INFO <path>`: View replica locations, SS IDs, and network details.
-- `DELETE_FILE <path>` / `DELETE_DIR <path>`: Redundantly remove files or entire directory trees.
-- `help`: Display the interactive help menu.
+- `WRITE_FILE <path> [local_path]`: Copy local data or type directly into the DFS.
+- `GET_FILE_INFO <path>`: View replica locations and network details.
+- `DELETE_FILE <path>` / `DELETE_DIR <path>`: Redundantly remove data.
 
 ---
 
@@ -120,11 +135,14 @@ Modernized interactive shell (C-Shell style) for performing file operations.
 The system is built on a **Modular Micro-Kernel** approach:
 
 1. **Commands:** Shared POD structures and protocol definitions (Binary-safe).
-2. **Network:** RAII wrapper over POSIX Sockets with hostname resolution and reliable `send_all`/`receive_all` primitives.
-3. **Logger:** Location-aware logging with UTC timestamps and source location.
-4. **Naming Server:** Thread-safe Trie and LRU cache for path resolution and cluster orchestration (Auto-healing controller).
-5. **Storage Server:** Fine-grained path-based locking and automatic filesystem isolation.
-6. **Client:** High-level interactive shell with connection retry logic.
+2. **Network:** RAII wrapper over POSIX Sockets with reliable `send_all`/`receive_all`.
+3. **Logger:** Location-aware logging with UTC timestamps.
+4. **Naming Server:** Thread-safe Trie and LRU cache for orchestration and job routing.
+5. **Storage Server:** Fine-grained path-based locking and filesystem isolation.
+6. **Job Server:** High-performance compute engine using `fork`/`exec` and stream relaying.
+7. **Client:** Interactive shell with terminal raw mode and history navigation.
+
+> **Design Note:** We utilize **Disaggregated Compute and Storage**. JS nodes are stateless and pull data from SS nodes on-demand. This provides perfect isolation between data persistence and computational workloads.
 
 ---
 

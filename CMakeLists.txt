@@ -88,6 +88,14 @@ target_sources(client_mod
 )
 target_link_libraries(client_mod PUBLIC commands_mod network_mod naming_mod logger_mod)
 
+# 8. Job Server Module
+add_library(job_mod STATIC)
+target_sources(job_mod
+    PRIVATE src/job-server/job_server_impl.cpp
+    PUBLIC FILE_SET CXX_MODULES FILES src/job-server/job_server.cppm
+)
+target_link_libraries(job_mod PUBLIC commands_mod network_mod logger_mod client_mod)
+
 # Executables
 add_executable(nm src/nm.cpp)
 target_link_libraries(nm PRIVATE naming_mod logger_mod commands_mod)
@@ -97,6 +105,9 @@ target_link_libraries(clt PRIVATE client_mod logger_mod commands_mod)
 
 add_executable(ss src/storage_server.cpp)
 target_link_libraries(ss PRIVATE storage_mod logger_mod commands_mod)
+
+add_executable(js src/job_server.cpp)
+target_link_libraries(js PRIVATE job_mod logger_mod commands_mod)
 
 # Tests
 include(GoogleTest)
@@ -124,3 +135,7 @@ gtest_discover_tests(network_test)
 add_executable(client_test tests/unit/client_test.cpp)
 target_link_libraries(client_test PRIVATE client_mod naming_mod commands_mod network_mod logger_mod GTest::gtest_main)
 gtest_discover_tests(client_test)
+
+add_executable(job_server_test tests/unit/job_server_test.cpp)
+target_link_libraries(job_server_test PRIVATE client_mod commands_mod GTest::gtest_main)
+gtest_discover_tests(job_server_test)

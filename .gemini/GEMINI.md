@@ -38,7 +38,7 @@
 - **Verification:** After every file modification, attempt to compile the specific file.
 - **Safety:** Never use `sudo` or modify files outside of the project root.
 - **ASK BEFORE ADDING NEWER FEATURES:** Some features aren't complete here yet. While there is *some* redundancy support, there isn't really failover support here yet. Only when the current system is moved from legacy to modern and has good test coverage with all passing should we move to adding new features.
-- **To build:** Do `ninja -C build`, don't try to invoke `/snap/bin/cmake` and NEVER invoke `/usr/bin/cmake`.
+- **After any code changes:** Do `ninja -C build`, don't try to invoke `/snap/bin/cmake` and NEVER invoke `/usr/bin/cmake`. If the build fails, iterate on the error generated and fix it.
 
 ## Tests
 

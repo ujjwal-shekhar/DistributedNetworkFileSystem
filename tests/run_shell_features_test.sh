@@ -14,13 +14,10 @@ trap cleanup EXIT
 docker compose build
 
 # Start the cluster
-docker compose up -d nm ss-1 ss-2
+docker compose up -d nm ss-1 ss-2 ss-3
 
 echo "Waiting for cluster to stabilize..."
 sleep 20
-
-# FEEDBACK: This test is not working, the client is not able to
-# connect to nm
 
 echo "1. Testing warp and logical CWD..."
 docker compose run --rm nm bash -c "./clt nm 8080" <<EOF > shell_test.log 2>&1
