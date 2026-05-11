@@ -34,11 +34,39 @@ TEST(NetworkTest, ServerClientLoopback) {
   server_thread.join();
 }
 
-TEST(NetworkTest, HostnameResolution) {
-  // localhost should always resolve
-  auto res = network::connect_to_server("localhost", 9999); // Port doesn't matter for resolution failure check
-  // Resolution should succeed, but connect should fail (since nothing is listening)
-  if (!res) {
-    EXPECT_EQ(res.error(), network::Error::ConnectFailed);
+TEST(NetworkTest, ConcurrentConnections) {
+  int port = 9092;
+  std::atomic<int> connections_handled = 0;
+
+  auto server_thread = std::jthread([&](std::stop_token st) {
+    auto server_sock_res = network::create_server_socket(port);
+    if (!server_sock_res) return;
+    auto& server_sock = *server_sock_res;
+
+    while (!st.stop_requested()) {
+      auto accept_res = server_sock.accept();
+      if (!accept_res) continue;
+      connections_handled++;
+    }
+  });
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+  const int NUM_CLIENTS = 10;
+  std::vector<std::jthread> clients;
+  for(int i = 0; i < NUM_CLIENTS; ++i) {
+    clients.emplace_back([]() {
+      auto res = network::connect_to_server("localhost", 9092);
+      EXPECT_TRUE(res.has_value());
+    });
   }
+
+  clients.clear(); // Wait for all clients to finish connecting
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  server_thread.request_stop();
+  
+  // Try to connect once more to unblock accept if it's hanging
+  (void)network::connect_to_server("localhost", 9092);
+
+  EXPECT_GE(connections_handled.load(), NUM_CLIENTS);
 }

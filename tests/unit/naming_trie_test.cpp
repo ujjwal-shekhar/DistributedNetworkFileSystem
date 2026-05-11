@@ -80,16 +80,28 @@ TEST(NamingTrieTest, AddServerToPath) {
   EXPECT_EQ((*res)[1], 2);
 }
 
-TEST(NamingTrieTest, ServerRegistration) {
+TEST(NamingTrieTest, JobServerRegistration) {
   naming::NamingService service;
-  commands::ServerDetails details{.id = -1};
-  std::strncpy(details.paths[0], "p1", 256);
-  details.path_count = 1;
-
-  int id = service.register_server(details);
-  EXPECT_GT(id, 0);
+  commands::ServerDetails js1{.id = -1, .online = true};
+  int id = service.register_job_server(js1);
+  EXPECT_GE(id, 1001);
   
-  auto res = service.find_storage_server("p1");
-  ASSERT_TRUE(res.has_value());
-  EXPECT_EQ((*res)[0], id);
+  auto details = service.get_job_server_details(id);
+  ASSERT_TRUE(details.has_value());
+  EXPECT_TRUE(details->online);
+  
+  service.mark_job_server_offline(id);
+  details = service.get_job_server_details(id);
+  EXPECT_FALSE(details->online);
+  EXPECT_EQ(service.count_online_job_servers(), 0);
+}
+
+TEST(NamingTrieTest, ComplexListAll) {
+  naming::NamingService service;
+  service.register_path("a/b/c/1.txt", {1}, true);
+  service.register_path("a/b/d/2.txt", {1}, true);
+  service.register_path("x/y/3.txt", {1}, true);
+
+  auto files = service.list_all();
+  EXPECT_EQ(files.size(), 3);
 }

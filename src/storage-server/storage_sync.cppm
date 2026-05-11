@@ -7,6 +7,8 @@ module;
 
 export module storage_server:sync;
 
+import logger;
+
 namespace storage {
 
 // FEEDBACK: We should surely have more docstring comments
@@ -17,15 +19,26 @@ namespace storage {
  */
 export class LockManager {
 public:
-  void acquire_read(const std::string &path) { get_mutex(path).lock_shared(); }
+  void acquire_read(const std::string &path) {
+    logger::debug("LockManager: Acquiring READ lock on " + path);
+    get_mutex(path).lock_shared();
+  }
 
   void release_read(const std::string &path) {
     get_mutex(path).unlock_shared();
+    logger::debug("LockManager: Released READ lock on " + path);
   }
 
-  void acquire_write(const std::string &path) { get_mutex(path).lock(); }
+  void acquire_write(const std::string &path) {
+    logger::debug("LockManager: Acquiring WRITE lock on " + path);
+    get_mutex(path).lock();
+    logger::debug("LockManager: Acquired WRITE lock on " + path);
+  }
 
-  void release_write(const std::string &path) { get_mutex(path).unlock(); }
+  void release_write(const std::string &path) {
+    get_mutex(path).unlock();
+    logger::debug("LockManager: Released WRITE lock on " + path);
+  }
 
 private:
   std::shared_mutex &get_mutex(const std::string &path) {

@@ -59,15 +59,13 @@ TEST(ClientUtilsTest, ParseDAG) {
   EXPECT_EQ(payload.edges[1].to_id, 2);
 }
 
-TEST(ClientUtilsTest, ParseDAGWithParentheses) {
-  auto payload = utils::parse_dag("(ls | grep txt) ; wc -l", "/");
-  
-  ASSERT_EQ(payload.node_count, 3);
-  ASSERT_EQ(payload.edge_count, 2);
+TEST(ClientUtilsTest, ParseDAGWithTrailingPipe) {
+  // Should return a payload with node_count = 0 due to syntax error
+  auto payload = utils::parse_dag("ls |", "/");
+  EXPECT_EQ(payload.node_count, 0);
 
-  EXPECT_STREQ(payload.nodes[0].command_line, "ls");
-  EXPECT_STREQ(payload.nodes[1].command_line, "grep txt");
-  EXPECT_STREQ(payload.nodes[2].command_line, "wc -l");
+  payload = utils::parse_dag("ls | grep txt | ", "/");
+  EXPECT_EQ(payload.node_count, 0);
 }
 
 TEST(ClientUtilsTest, ResolvePath) {
