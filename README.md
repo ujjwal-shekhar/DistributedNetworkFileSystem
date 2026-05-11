@@ -1,11 +1,10 @@
 <div align="center">
 
-<img src="assets/banner.png" alt="OrionFS Banner" width="100%">
-
-
 [![C++ Standard](https://img.shields.io/badge/C%2B%2B-26-blue.svg?style=for-the-badge&logo=c%2B%2B)](https://isocpp.org/)
 [![Build and Test](https://img.shields.io/badge/Build%20%26%20Test-passing-brightgreen.svg?style=for-the-badge&logo=github-actions)](https://github.com/your-username/OrionFS)
 [![License](https://img.shields.io/badge/License-BSL--1.0-orange.svg?style=for-the-badge)](https://opensource.org/licenses/BSL-1.0)
+
+<img src="assets/banner.png" alt="OrionFS Banner" width="100%">
 
 
 # 🌌 OrionFS
