@@ -1,72 +1,128 @@
-# Modern Distributed Network File System (mDNFS)
+# 🌌 OrionFS: Unified Distributed Data & Compute Engine
 
-A high-performance, modular, and redundant distributed file system implemented using **Modern C++ (C++20/23/26)**.
+OrionFS is a high-performance system that fuses a **Decoupled Network File System** with a **Distributed Shell Execution Engine**, implemented using **Cutting-Edge C++ (C++20/23/26)**.
+
+```text
+        [ SS1 ]
+        [ SS2 ] <====> [ CLT ]
+          ^              ^
+          |              |
+          |            [ NM ]
+          |              |
+          v              v
+        [ SS3 ] <====> [ JS1 ]
+        [ SS4 ]        [ JS2 ]
+```
+
+---
 
 ## Key Features
 
-- **Modern Architecture:** Strictly organized into 7 distinct C++20 modules (`client`, `naming-server`, `storage-server`, `job-server`, `network`, `commands`, and `logger`).
-- **Distributed Shell:** Integrated interactive C-Shell with terminal raw mode, command history, and logical VFS navigation.
-- **Disaggregated Compute:** Dedicated Job Servers (`js`) provide stateless compute resources, separating CPU-heavy tasks from storage I/O for maximum stability.
-- **Arbitrary Job Execution:** Foundation for a distributed execution engine using `fork`/`exec` to run system binaries (`grep`, `wc`, `sort`) across the cluster.
-- **High Performance Networking:** Robust POD-based binary protocol with full hostname resolution support for distributed environments (Docker-ready).
-- **Dynamic Redundancy (Auto-Healing):** Naming Server automatically detects node failures and orchestrates SS-to-SS re-replication to maintain the target replication factor.
-- **Full Synchronization:** `WRITE_FILE` operations are automatically synchronized across all online replicas.
-- **Fault Tolerance & Chaos Resistance:** Automatic load balancing for `READ_FILE` and robust connection retry logic across all components.
-- **Modern Concurrency:** Leverages `std::jthread`, `std::stop_token`, and fine-grained path-based locking for safe, high-concurrency access.
+- **📂 Hybrid Data/Compute Architecture:** A dual-purpose engine that serves as both a high-throughput **Distributed NFS** and a parallel **Job DAG Execution Engine**.
+- **🚀 Distributed Shell (DAG):** Advanced scheduler that compiles complex shell strings into a Directed Acyclic Graph. Supports parallel branches, pipelines (`|`), sequential barriers (`;`), and background tasks (`&`).
+- **🔗 Decoupled Data Path:** To maximize performance, OrionFS separates metadata from data. The Naming Server handles routing, while the Client and Job Servers stream bytes **directly** to/from Storage Servers.
+- **🧊 Disaggregated Compute:** Dedicated Job Servers (`js`) provide stateless compute resources. Computation is decoupled from storage, allowing independent scaling and maximum fault isolation.
+- **🦾 Dynamic Redundancy (Auto-Healing):** The Naming Server (`nm`) monitors node health. Upon failure, it orchestrates peer-to-peer re-replication between Storage Servers (`ss`) to maintain the target replication factor.
+- **⚡ Modern C++ Core:** Built with **C++26** standards, utilizing C++20 Modules, `std::expected` for error propagation, `std::jthread` for RAII-based concurrency, and **C++26 Reflection**.
+- **🛡️ Distributed Synchronization:** Fine-grained path-based locking ensures data integrity during concurrent `WRITE_FILE` operations across multiple replicas.
+- **📟 Modernized C-Shell:** Feature-rich interactive CLI with terminal raw mode, ANSI color support, command history persistence, and logical VFS navigation (`warp`, `peek`).
 
 ---
 
 ## Technical Stack
 
 - **Standard:** C++26 (using `g++-16`)
-- **Build System:** CMake 3.30+ (for C++26 support) with Ninja
-- **Testing:** Google Test (GTest) 1.14+ (18+ tests including Client and Job partitions)
-- **Virtualization:** Docker & Docker Compose for cluster simulation
+- **Build System:** CMake 3.30+ with Ninja
+- **Testing:** Google Test (GTest) 1.14+
+- **Virtualization:** Docker & Docker Compose
 - **Language Features:** 
   - C++20 Modules & Partitions
-  - Static Reflection (P2996 style)
-  - `std::expected` for error handling
-  - `std::println`, `std::format` & `std::source_location` for UTC-timestamped logging
-  - RAII-based Socket & Thread management
+  - **C++26 Reflection**
+  - `std::expected` / `std::optional`
+  - RAII Socket & Thread management
+
+## Command Reference
+
+| Command | Privilege Tier | Description |
+| :--- | :--- | :--- |
+| `warp <path>` | USER | Change local directory (client-side) |
+| `peek [path]` | USER | List files in directory (DNFS) |
+| `pastevents` | USER | Show command history |
+| `pastevents purge` | USER | Clear command history |
+| `pastevents execute <idx>` | USER | Execute a command from history |
+| `job <cmd> [args] <file>` | USER | Execute a distributed job on the JS cluster |
+| `LIST_ALL` | USER | List all files in the system |
+| `READ_FILE <path>` | USER | Read the content of a file |
+| `WRITE_FILE <p1> [p2]` | USER | Write content to a file (or from file `p2`) |
+| `CREATE_FILE <path>` | PRIVILEGED | Create a new file |
+| `CREATE_DIR <path>` | PRIVILEGED | Create a new directory |
+| `DELETE_FILE <path>` | PRIVILEGED | Delete a file |
+| `DELETE_DIR <path>` | PRIVILEGED | Delete a directory |
+| `GET_FILE_INFO <path>` | USER | Get metadata for a file |
+| `FAIL_SERVER` | ADMIN | Simulate a server failure |
+| `exit` | USER | Exit the shell |
+
+## Modular Architecture
+
+OrionFS is strictly partitioned into 7 C++20 modules for separation of concerns and build efficiency:
+
+- `client`: Interactive shell, DAG parsing, job submissions, and FS navigation.
+- `naming-server`: Metadata, replication, and DAG task scheduling.
+- `storage-server`: Data persistence, fine-grained locking, and I/O.
+- `job-server`: Stateless compute engine for arbitrary task execution.
+- `network`: RAII-based socket abstraction with binary stream synchronization.
+- `commands`: Shared POD protocols and DAG structure definitions.
+- `logger`: Location-aware, thread-safe, UTC-timestamped logging.
 
 ---
 
 ## Architecture Visualization
 
-### 1. System Interaction Flow
-The following diagram illustrates how a client-initiated `job` is orchestrated across the cluster.
+### 1. Centralized Control & Decoupled Data
+
+OrionFS utilizes a hybrid communication model: metadata and orchestration flow through the Naming Server (NM), while high-volume data streams directly between the Client/Job Servers and the Storage Servers (SS).
 
 ```mermaid
 graph TD
-    subgraph Client_Space [User Interface]
-        CLT[Client Shell]
+    classDef control fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef compute fill:#bbf,stroke:#333,stroke-width:2px;
+    classDef storage fill:#bfb,stroke:#333,stroke-width:2px;
+
+    subgraph Control_Plane [The Central Brain]
+        NM[Naming Server Orchestrator]:::control
     end
 
-    subgraph Control_Plane [Orchestration]
-        NM[Naming Server]
+    subgraph Client_Space [User Interface]
+        CLT[Orion Shell]
     end
 
     subgraph Compute_Plane [Stateless Workers]
-        JS[Job Server]
+        JS[Job Server Cluster]:::compute
     end
 
-    subgraph Storage_Plane [Data Nodes]
-        SS[Storage Server]
+    subgraph Storage_Plane [Data Backbone]
+        SS[Storage Server Cluster]:::storage
     end
 
-    CLT -- 1. SUBMIT_JOB --> NM
-    NM -- 2. EXECUTE_TASK --> JS
-    JS -- 3. GET_FILE_INFO --> NM
-    NM -- 4. Replica Locations --> JS
-    JS -- 5. READ_FILE --> SS
-    SS -- 6. Byte Stream --> JS
-    JS -- 7. Fork/Exec Compute --> JS
-    JS -- 8. Stream Results --> NM
-    NM -- 9. Relay to Terminal --> CLT
+    %% Client Interactions
+    CLT -- "Metadata & Task Submission" --> NM
+    CLT == "DIRECT I/O PATH" ==> SS
+    
+    %% Naming Server Orchestration
+    NM -- "Control & Auto-Heal" --> SS
+    NM -- "Schedule Tasks" --> JS
+    
+    %% Compute Path
+    JS -- "Metadata Lookup" --> NM
+    JS == "DIRECT DATA STREAM" ==> SS
+    JS == "Process/Write Data" ==> SS
+    JS -- "Relay Results" --> NM
+    NM -- "Stream to Terminal" --> CLT
 ```
 
-### 2. Disaggregated Model
-mDNFS uses a disaggregated architecture to ensure compute scaling does not impact storage performance.
+### 2. Disaggregated Resource Model
+
+Compute and Storage scale independently. Job Servers pull data locally only for the duration of a task.
 
 ```mermaid
 graph LR
@@ -75,8 +131,8 @@ graph LR
         JS2[JS-2]
     end
 
-    subgraph Network_Backbone
-        NET((High-Speed Network))
+    subgraph Network_Fabric
+        NET((High-Speed POD Protocol))
     end
 
     subgraph Storage_Layer
@@ -93,59 +149,45 @@ graph LR
 ## Component Usage
 
 ### 1. Naming Server (NM)
-The central orchestrator that manages the file trie, tracks storage servers, and schedules jobs.
+The central orchestrator that manages the metadata trie, tracks storage/job servers, and schedules DAG tasks.
 ```bash
 ./nm [min_ss] [replication_factor]
 ```
 
 ### 2. Storage Server (SS)
-Data nodes that store the files. They automatically create isolated storage roots.
+Data nodes that store files. They automatically create isolated storage roots per node.
 ```bash
 ./ss [storage_root] [nm_host] [nm_port]
 ```
 
 ### 3. Job Server (JS)
-Stateless compute workers that execute arbitrary shell commands on DFS data.
+Stateless compute workers that execute shell commands on DFS data.
 ```bash
 ./js [nm_host] [nm_reg_port] [nm_clt_port]
 ```
-- `nm_reg_port`: Registration port for JS (default: 6051).
-- `nm_clt_port`: Metadata query port (default: 8080).
 
 ### 4. Client (CLT)
-Modernized interactive shell (C-Shell style) for performing file operations and submitting jobs.
+Interactive shell for file operations and DAG job submission.
 ```bash
 ./clt [nm_host] [nm_port] [--history-size N]
 ```
-Available commands:
-- `job <command> [args] <target_file>`: Execute a distributed job (e.g., `job grep "ERROR" server.log`).
-- `warp <path>`: Change logical current working directory within the DNFS.
-- `peek [path]`: List files in the logical directory.
-- `pastevents [purge|execute <idx>]`: Manage or execute commands from the shell history.
-- `CREATE_FILE <path>`: Create a replicated file.
-- `READ_FILE <path>`: Read file content (load-balanced across replicas).
-- `WRITE_FILE <path> [local_path]`: Copy local data or type directly into the DFS.
-- `GET_FILE_INFO <path>`: View replica locations and network details.
-- `DELETE_FILE <path>` / `DELETE_DIR <path>`: Redundantly remove data.
+
+**Advanced Syntax Examples:**
+- **Parallel:** `job sleep 5 & sleep 5` (Runs on two JS nodes simultaneously).
+- **Pipeline:** `job cat logs.txt | grep ERROR` (Distributed data-stream).
+- **Mixed DAG:** `(job cat a.txt | grep X & job sleep 2) ; job echo "Done"` (Complex orchestration).
 
 ---
 
-## Architecture Design
+## Research & Inspirations
 
-The system is built on a **Modular Micro-Kernel** approach:
+OrionFS is a modern realization of foundational distributed systems concepts, heavily inspired by:
 
-1. **Commands:** Shared POD structures and protocol definitions (Binary-safe).
-2. **Network:** RAII wrapper over POSIX Sockets with reliable `send_all`/`receive_all`.
-3. **Logger:** Location-aware logging with UTC timestamps.
-4. **Naming Server:** Thread-safe Trie and LRU cache for orchestration and job routing.
-5. **Storage Server:** Fine-grained path-based locking and filesystem isolation.
-6. **Job Server:** High-performance compute engine using `fork`/`exec` and stream relaying.
-7. **Client:** Interactive shell with terminal raw mode and history navigation.
-
-> **Design Note:** We utilize **Disaggregated Compute and Storage**. JS nodes are stateless and pull data from SS nodes on-demand. This provides perfect isolation between data persistence and computational workloads.
+- 📄 **Microsoft Dryad:** [Dryad: Distributed Data-Parallel Programs from Sequential Building Blocks](https://www.microsoft.com/en-us/research/publication/dryad-distributed-data-parallel-programs-from-sequential-building-blocks/)
+- 📄 **Apache Hadoop HDFS:** [HDFS Design: Decoupled Data and Metadata](https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/HdfsDesign.html)
 
 ---
 
 ## AI Collaboration
 
-This project was modernized, refactored, and tested using **Gemini CLI**, an interactive software engineering agent, focusing on C++26 standards, distributed robustness, and automated resilience testing.
+OrionFS was modernized and engineered using **Gemini CLI**, focusing on C++26 standards, distributed robustness, and automated resilience testing.

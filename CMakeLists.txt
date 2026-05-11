@@ -52,6 +52,7 @@ target_sources(naming_mod
         src/naming-server/service/naming_types.cppm
         src/naming-server/service/naming_internal.cppm
         src/naming-server/service/commands.cppm
+        src/naming-server/service/nm_load_balancer.cppm
         src/naming-server/auth/admin.cppm
         src/naming-server/auth/client_manager.cppm
         src/naming-server/network/server.cppm
@@ -75,7 +76,9 @@ target_link_libraries(storage_mod PUBLIC commands_mod network_mod logger_mod)
 # 7. Client Module
 add_library(client_mod STATIC)
 target_sources(client_mod 
-    PRIVATE src/client/client_impl.cpp
+    PRIVATE 
+        src/client/client_impl.cpp
+        src/client/client_utils_impl.cpp
     PUBLIC FILE_SET CXX_MODULES FILES 
         src/client/client.cppm
         src/client/client_types.cppm

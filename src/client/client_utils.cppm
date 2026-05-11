@@ -9,6 +9,8 @@ module;
 
 export module client:utils;
 
+import commands;
+
 namespace client::utils {
 
 export std::string resolve_path(std::string_view current_cwd,
@@ -88,10 +90,17 @@ export bool contains_pipe(std::string_view input) {
   return input.find('|') != std::string_view::npos;
 }
 
+export bool contains_async(std::string_view input) {
+  return input.find('&') != std::string_view::npos;
+}
+
 export bool contains_redirect(std::string_view input) {
   return input.find('>') != std::string_view::npos ||
          input.find('<') != std::string_view::npos;
 }
+
+export commands::DAGPayload parse_dag(std::string_view input,
+                                      std::string_view cwd);
 
 export std::vector<std::string> split_args(std::string_view input) {
   std::vector<std::string> args;

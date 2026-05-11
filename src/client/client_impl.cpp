@@ -38,23 +38,29 @@ struct Client::Impl {
   explicit Impl(size_t history_size) : history(history_size) {}
 
   std::expected<void, Error> process_line(std::string_view line) {
-    if (utils::contains_pipe(line) || utils::contains_redirect(line)) {
-      std::cout << "\033[1;31mError: Pipes and redirections are not supported "
-                   "in Phase 1.\033[0m\n";
-      last_status = ShellStatus::Error;
-      return {};
-    }
-
     auto commands_list = utils::split_commands(line);
+
     for (const auto &cmd_str : commands_list) {
       if (cmd_str.empty())
         continue;
+
+      // Only route to DAG if explicitly a distributed job request
+      bool is_explicit_job = cmd_str.starts_with("job ");
+      bool has_dag_ops = utils::contains_pipe(cmd_str) || 
+                         utils::contains_redirect(cmd_str) ||
+                         utils::contains_async(cmd_str);
+
+      if (is_explicit_job || has_dag_ops) {
+        auto res = handle_dag_command(cmd_str);
+        if (!res) {
+          logger::error("DAG execution failed for: " + cmd_str);
+          last_status = ShellStatus::Error;
+        }
+        continue;
+      }
+
       history.add(cmd_str);
-
-      // Default to Success for each command, but let process_single_command
-      // override it
       last_status = ShellStatus::Success;
-
       auto res = process_single_command(cmd_str);
       if (!res) {
         logger::error("Command failed: " + cmd_str);
@@ -63,6 +69,58 @@ struct Client::Impl {
     }
     return {};
   }
+
+
+  std::expected<void, Error> handle_dag_command(std::string_view line) {
+    history.add(line);
+    std::cout << "\033[1;34mCompiling DAG...\033[0m\n";
+    auto payload = utils::parse_dag(line, logical_cwd);
+
+    // Basic validation: if no nodes, parsing failed (e.g. invalid syntax)
+    if (payload.node_count == 0) {
+        last_status = ShellStatus::Error;
+        return std::unexpected(Error::InvalidCommand);
+    }
+
+    commands::ClientRequest request{};
+    request.command = commands::Command::SUBMIT_DAG;
+
+    if (!ns_socket) {
+      last_status = ShellStatus::Error;
+      return std::unexpected(Error::ConnectionFailed);
+    }
+
+    (void)network::send_all(*ns_socket, &request, sizeof(request));
+    (void)network::send_all(*ns_socket, &payload, sizeof(payload));
+
+    commands::AckPacket ack;
+    auto recv_ack = network::receive_all(*ns_socket, &ack, sizeof(ack));
+    if (!recv_ack || ack.status != commands::Status::Success) {
+      std::cout << "\033[1;31mDAG Job Submission Failed.\033[0m\n";
+      last_status = ShellStatus::Error;
+      return std::unexpected(Error::InvalidCommand);
+    }
+
+    // Receive and print output stream from the DAG execution
+    commands::FilePacket packet;
+    while (true) {
+      auto r = network::receive_all(*ns_socket, &packet, sizeof(packet));
+      if (!r) {
+        last_status = ShellStatus::Error;
+        break;
+      }
+      if (packet.size > 0) {
+        std::cout.write(packet.chunk, packet.size);
+      }
+      if (packet.is_last)
+        break;
+    }
+    std::cout << std::endl;
+    if (last_status != ShellStatus::Error)
+        last_status = ShellStatus::Success;
+    return {};
+  }
+
 
   std::expected<void, Error> process_single_command(std::string_view line) {
     std::stringstream ss(std::string{line});

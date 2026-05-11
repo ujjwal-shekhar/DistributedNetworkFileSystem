@@ -121,25 +121,41 @@ FileSystem::read_file(std::string_view path,
 std::expected<void, Error>
 FileSystem::write_file(std::string_view path,
                        const network::Socket &client_sock) {
-  std::ofstream file{std::string(path), std::ios::binary};
-  if (!file)
-    return std::unexpected(Error::OperationFailed);
-
-  commands::FilePacket packet;
-  while (true) {
-    auto recv_res = network::receive_all(client_sock, &packet, sizeof(packet));
-    if (!recv_res)
-      break;
-
-    if (packet.size > 0) {
-      file.write(packet.chunk, packet.size);
+  try {
+    fs::path p{std::string(path)};
+    if (p.has_parent_path()) {
+      std::error_code ec;
+      fs::create_directories(p.parent_path(), ec);
     }
 
-    if (packet.is_last)
-      break;
-  }
+    std::ofstream file{p, std::ios::binary};
+    if (!file) {
+      logger::error("FileSystem: Failed to open file for writing: " +
+                    std::string(path));
+      return std::unexpected(Error::OperationFailed);
+    }
 
-  return {};
+    commands::FilePacket packet;
+    while (true) {
+      auto recv_res =
+          network::receive_all(client_sock, &packet, sizeof(packet));
+      if (!recv_res)
+        break;
+
+      if (packet.size > 0) {
+        file.write(packet.chunk, packet.size);
+      }
+
+      if (packet.is_last)
+        break;
+    }
+
+    return {};
+  } catch (const std::exception &e) {
+    logger::error("FileSystem: Exception in write_file: " +
+                  std::string(e.what()));
+    return std::unexpected(Error::OperationFailed);
+  }
 }
 
 } // namespace storage

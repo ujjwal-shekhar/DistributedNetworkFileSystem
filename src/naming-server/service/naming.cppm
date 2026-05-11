@@ -12,12 +12,14 @@ module;
 export module naming_server;
 
 import commands;
+import network;
 
 export import :types;
 export import :commands;
 export import :admin;
 export import :client_manager;
 export import :server;
+export import :load_balancer;
 
 namespace naming {
 
@@ -61,6 +63,9 @@ public:
   [[nodiscard]] std::optional<commands::ServerDetails>
   get_job_server_details(int server_id);
   [[nodiscard]] size_t count_online_job_servers() const noexcept;
+
+  void process_dag(const commands::DAGPayload &payload,
+                   const network::Socket &client_socket);
 
   [[nodiscard]] ClientManager &clients() noexcept;
 

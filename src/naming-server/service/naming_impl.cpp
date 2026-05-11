@@ -1,13 +1,19 @@
 module;
 
+#include <algorithm>
+#include <atomic>
+#include <cstring>
 #include <expected>
 #include <list>
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <queue>
+#include <random>
 #include <shared_mutex>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -15,6 +21,7 @@ module naming_server;
 
 import :internal;
 import commands;
+import logger;
 
 namespace naming {
 
@@ -219,6 +226,225 @@ size_t NamingService::count_online_job_servers() const noexcept {
   return count;
 }
 
+void NamingService::process_dag(const commands::DAGPayload &payload,
+                                const network::Socket &client_socket) {
+  logger::info("Naming Server: Processing DAG with " +
+               std::to_string(payload.node_count) + " nodes.");
+
+  if (count_online_job_servers() == 0) {
+    logger::error("Naming Server: Cannot process DAG, no Job Servers online.");
+    commands::AckPacket ack{.status = commands::Status::Error,
+                            .error_code = 503};
+    (void)network::send_all(client_socket, &ack, sizeof(ack));
+    return;
+  }
+
+  commands::AckPacket ack{.status = commands::Status::Success};
+  (void)network::send_all(client_socket, &ack, sizeof(ack));
+
+  std::vector<std::vector<int>> adj(payload.node_count);
+  std::vector<int> in_degree(payload.node_count, 0);
+  std::vector<std::string> node_output_files(payload.node_count, "");
+
+  for (int i = 0; i < payload.edge_count; ++i) {
+    adj[payload.edges[i].from_id].push_back(payload.edges[i].to_id);
+    in_degree[payload.edges[i].to_id]++;
+  }
+
+  std::vector<std::atomic<bool>> completed(payload.node_count);
+  std::vector<std::atomic<bool>> running(payload.node_count);
+  for (int i = 0; i < payload.node_count; ++i) {
+    completed[i] = false;
+    running[i] = false;
+  }
+
+  while (true) {
+    std::vector<int> ready_nodes;
+    for (int i = 0; i < payload.node_count; ++i) {
+      if (in_degree[i] == 0 && !completed[i] && !running[i]) {
+        ready_nodes.push_back(i);
+      }
+    }
+
+    if (ready_nodes.empty()) {
+      bool all_done = true;
+      for (int i = 0; i < payload.node_count; ++i)
+        if (!completed[i])
+          all_done = false;
+      if (all_done)
+        break;
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      continue;
+    }
+
+    std::vector<std::jthread> threads;
+    std::mutex socket_mutex;
+
+    for (int node_id : ready_nodes) {
+      running[node_id] = true;
+      threads.emplace_back([&, node_id]() {
+        const auto &node = payload.nodes[node_id];
+        logger::info("Naming Server: Executing Node " +
+                     std::to_string(node_id) + ": " + node.command_line);
+
+        std::vector<commands::ServerDetails> available_js;
+        {
+          std::shared_lock lock(impl_->trie_mutex);
+          for (const auto &[id, details] : impl_->job_servers) {
+            if (details.online)
+              available_js.push_back(details);
+          }
+        }
+
+        if (available_js.empty()) {
+          logger::error("Naming Server: No Job Servers for node " +
+                        std::to_string(node_id));
+          std::lock_guard lock(socket_mutex);
+          commands::FilePacket error_packet;
+          std::string msg = "Error: No Job Servers for node " +
+                            std::to_string(node_id) + "\n";
+          std::memcpy(error_packet.chunk, msg.c_str(), msg.size());
+          error_packet.size = msg.size();
+          (void)network::send_all(client_socket, &error_packet,
+                                  sizeof(error_packet));
+          completed[node_id] = true;
+          return;
+        }
+
+        auto selected_js = lb::LoadBalancer::select_js(available_js);
+        auto js_sock_res =
+            network::connect_to_server(selected_js.ip, selected_js.port_nm);
+        if (!js_sock_res) {
+          logger::error("Naming Server: Failed to connect to JS for node " +
+                        std::to_string(node_id));
+          completed[node_id] = true;
+          return;
+        }
+
+        commands::ClientRequest js_req{};
+        js_req.command = commands::Command::EXECUTE_TASK;
+        commands::JobPayload js_payload{};
+        std::strncpy(js_payload.command_line, node.command_line,
+                     sizeof(js_payload.command_line) - 1);
+
+        for (int i = 0; i < payload.edge_count; ++i) {
+          if (payload.edges[i].to_id == node_id &&
+              payload.edges[i].type == commands::EdgeType::PIPE_DATA) {
+            std::strncpy(js_payload.target_file,
+                         node_output_files[payload.edges[i].from_id].c_str(),
+                         sizeof(js_payload.target_file) - 1);
+            logger::info("Naming Server: Node " + std::to_string(node_id) +
+                         " reading from pipe: " + js_payload.target_file);
+            break;
+          }
+        }
+
+        if (js_payload.target_file[0] == '\0' && node.target_file[0] != '\0') {
+          std::strncpy(js_payload.target_file, node.target_file,
+                       sizeof(js_payload.target_file) - 1);
+          logger::info("Naming Server: Node " + std::to_string(node_id) +
+                       " reading from file: " + js_payload.target_file);
+        }
+
+        (void)network::send_all(*js_sock_res, &js_req, sizeof(js_req));
+        (void)network::send_all(*js_sock_res, &js_payload, sizeof(js_payload));
+
+        commands::AckPacket js_ack;
+        if (!network::receive_all(*js_sock_res, &js_ack, sizeof(js_ack)) ||
+            js_ack.status != commands::Status::Success) {
+          logger::error("Naming Server: JS failed to start node " +
+                        std::to_string(node_id));
+          completed[node_id] = true;
+          return;
+        }
+
+        bool is_pipe_source = false;
+        for (int i = 0; i < payload.edge_count; ++i) {
+          if (payload.edges[i].from_id == node_id &&
+              payload.edges[i].type == commands::EdgeType::PIPE_DATA) {
+            is_pipe_source = true;
+            break;
+          }
+        }
+
+        std::string temp_path = "";
+        std::optional<network::Socket> ss_sock;
+        if (is_pipe_source) {
+          temp_path = "/tmp/dag_pipe_" + std::to_string(node_id) + ".tmp";
+          node_output_files[node_id] = temp_path;
+          logger::info("Naming Server: Node " + std::to_string(node_id) +
+                       " writing to pipe: " + temp_path);
+
+          auto online_ss = get_online_server_ids();
+          if (!online_ss.empty()) {
+            register_path(temp_path, {online_ss[0]}, true);
+            auto ss_details = get_server_details(online_ss[0]);
+            if (ss_details) {
+              auto res = network::connect_to_server(ss_details->ip,
+                                                    ss_details->port_client);
+              if (res) {
+                ss_sock = std::move(*res);
+                commands::ClientRequest write_req{};
+                write_req.command = commands::Command::WRITE_FILE;
+                std::strncpy(write_req.arg1, temp_path.c_str(),
+                             sizeof(write_req.arg1) - 1);
+                (void)network::send_all(*ss_sock, &write_req,
+                                        sizeof(write_req));
+              }
+            }
+          }
+        }
+
+        commands::FilePacket packet;
+        while (true) {
+          auto r = network::receive_all(*js_sock_res, &packet, sizeof(packet));
+          if (!r)
+            break;
+
+          if (ss_sock && packet.size > 0) {
+            (void)network::send_all(*ss_sock, &packet, sizeof(packet));
+          }
+
+          if (!is_pipe_source && packet.size > 0) {
+            packet.is_last = false;
+            std::lock_guard lock(socket_mutex);
+            (void)network::send_all(client_socket, &packet, sizeof(packet));
+          }
+          if (packet.size == 0)
+            break;
+        }
+
+        if (ss_sock) {
+          commands::FilePacket last_p{.size = 0, .is_last = true};
+          (void)network::send_all(*ss_sock, &last_p, sizeof(last_p));
+
+          // Sync: Read Ack from SS
+          commands::AckPacket write_ack;
+          (void)network::receive_all(*ss_sock, &write_ack, sizeof(write_ack));
+          logger::info("Naming Server: Node " + std::to_string(node_id) +
+                       " pipe sync complete.");
+        }
+
+        completed[node_id] = true;
+        logger::info("Naming Server: Node " + std::to_string(node_id) +
+                     " completed.");
+      });
+    }
+
+    threads.clear();
+    for (int node_id : ready_nodes) {
+      for (int neighbor : adj[node_id]) {
+        in_degree[neighbor]--;
+      }
+    }
+  }
+
+  commands::FilePacket final_packet;
+  final_packet.size = 0;
+  final_packet.is_last = true;
+  (void)network::send_all(client_socket, &final_packet, sizeof(final_packet));
+}
+
 std::expected<std::vector<int>, Error>
 NamingService::find_storage_server(std::string_view path) {
   if (auto cached = impl_->cache.get(path)) {
@@ -276,7 +502,6 @@ void NamingService::register_path_internal(std::string_view path, int server_id,
   curr->is_end_of_word = true;
   curr->is_file = is_file;
 
-  // Add server_id to server_ids if not already present
   bool found = false;
   for (int id : curr->server_ids) {
     if (id == server_id) {
@@ -315,9 +540,6 @@ void NamingService::remove_path(std::string_view path) {
   std::unique_lock lock(impl_->trie_mutex);
   remove_recursive(impl_->root, path, 0);
   impl_->cache.remove(path);
-  // Also need to clear all cache entries that have 'path/' as prefix
-  // Since our LRUCache is simple, we might need a better way or just clear it.
-  // For now, let's assume the user will most likely hit the trie for subpaths.
 }
 
 } // namespace naming

@@ -5,6 +5,7 @@
 #include <vector>
 
 import client;
+import commands;
 
 using namespace client;
 
@@ -30,6 +31,43 @@ TEST(ClientUtilsTest, ContainsPipeAndRedirect) {
   EXPECT_TRUE(utils::contains_redirect("cat x > y"));
   EXPECT_TRUE(utils::contains_redirect("sort < file"));
   EXPECT_FALSE(utils::contains_redirect("ls -la"));
+}
+
+TEST(ClientUtilsTest, ParseDAG) {
+  auto payload = utils::parse_dag("ls | grep txt; wc -l", "/");
+  
+  // ls | grep txt -> 2 nodes, 1 pipe edge
+  // ; wc -l -> 1 node, 1 sequence edge from grep txt
+  ASSERT_EQ(payload.node_count, 3);
+  ASSERT_EQ(payload.edge_count, 2);
+
+  EXPECT_EQ(payload.nodes[0].type, commands::NodeType::COMMAND);
+  EXPECT_STREQ(payload.nodes[0].command_line, "ls");
+
+  EXPECT_EQ(payload.nodes[1].type, commands::NodeType::COMMAND);
+  EXPECT_STREQ(payload.nodes[1].command_line, "grep txt");
+
+  EXPECT_EQ(payload.nodes[2].type, commands::NodeType::COMMAND);
+  EXPECT_STREQ(payload.nodes[2].command_line, "wc -l");
+
+  EXPECT_EQ(payload.edges[0].type, commands::EdgeType::PIPE_DATA);
+  EXPECT_EQ(payload.edges[0].from_id, 0);
+  EXPECT_EQ(payload.edges[0].to_id, 1);
+
+  EXPECT_EQ(payload.edges[1].type, commands::EdgeType::CONTROL_SEQ);
+  EXPECT_EQ(payload.edges[1].from_id, 1);
+  EXPECT_EQ(payload.edges[1].to_id, 2);
+}
+
+TEST(ClientUtilsTest, ParseDAGWithParentheses) {
+  auto payload = utils::parse_dag("(ls | grep txt) ; wc -l", "/");
+  
+  ASSERT_EQ(payload.node_count, 3);
+  ASSERT_EQ(payload.edge_count, 2);
+
+  EXPECT_STREQ(payload.nodes[0].command_line, "ls");
+  EXPECT_STREQ(payload.nodes[1].command_line, "grep txt");
+  EXPECT_STREQ(payload.nodes[2].command_line, "wc -l");
 }
 
 TEST(ClientUtilsTest, ResolvePath) {

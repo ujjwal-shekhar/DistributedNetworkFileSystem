@@ -17,7 +17,7 @@ docker compose build
 docker compose up -d nm ss-1 ss-2 ss-3
 
 echo "Waiting for cluster to stabilize..."
-sleep 20
+sleep 10
 
 echo "1. Testing warp and logical CWD..."
 docker compose run --rm nm bash -c "./clt nm 8080" <<EOF > shell_test.log 2>&1
@@ -36,7 +36,7 @@ EOF
 cat shell_test.log
 
 # Check if file1.txt was seen inside dir1 but not in root (unless explicitly looked for)
-if ! grep -q "dir1@.*: /dir1" shell_test.log; then
+if ! grep -q ":/dir1" shell_test.log; then
     echo "Logical CWD 'warp' failed. Prompt did not show /dir1."
     exit 1
 fi

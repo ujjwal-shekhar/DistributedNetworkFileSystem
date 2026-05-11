@@ -28,10 +28,50 @@ export enum class Command {
   JS_REGISTER,
   JS_HEARTBEAT,
   SUBMIT_JOB,
+  SUBMIT_DAG,
   EXECUTE_TASK,
 };
 
+export enum class NodeType { COMMAND, INPUT_FILE, OUTPUT_FILE };
+export enum class EdgeType {
+  PIPE_DATA,
+  CONTROL_SEQ,
+  CONTROL_AND,
+  CONTROL_OR,
+  ASYNC
+};
+
 export enum class PrivilegeTier { USER, PRIVILEGED, ADMIN };
+
+export constexpr size_t MAX_ARG_LEN = 256;
+export constexpr size_t MAX_ARGS_COUNT = 16;
+export constexpr size_t MAX_PATH_LEN = 256;
+export constexpr size_t MAX_PATHS = 10;
+export constexpr size_t MAX_IP_LEN = 64;
+export constexpr size_t FILE_CHUNK_SIZE = 4096;
+
+export struct DAGNode {
+  int id = -1;
+  NodeType type = NodeType::COMMAND;
+  char command_line[MAX_ARG_LEN];
+  char target_file[MAX_PATH_LEN];
+};
+
+export struct DAGEdge {
+  int from_id = -1;
+  int to_id = -1;
+  EdgeType type = EdgeType::CONTROL_SEQ;
+};
+
+export constexpr size_t MAX_DAG_NODES = 32;
+export constexpr size_t MAX_DAG_EDGES = 64;
+
+export struct DAGPayload {
+  int node_count = 0;
+  DAGNode nodes[MAX_DAG_NODES];
+  int edge_count = 0;
+  DAGEdge edges[MAX_DAG_EDGES];
+};
 
 export struct CommandMetadata {
   Command cmd;
@@ -41,9 +81,6 @@ export struct CommandMetadata {
 };
 
 export constexpr CommandMetadata get_metadata(Command cmd) {
-  // FEEDBACK: Can probably use reflection and meta magic to do this
-  // Will only need one place to store name, cost, tier info
-  // and then lookup at compile time, simple.
   switch (cmd) {
   case Command::FAIL_SERVER:
     return {Command::FAIL_SERVER, "FAIL_SERVER", 0, PrivilegeTier::ADMIN};
@@ -71,6 +108,8 @@ export constexpr CommandMetadata get_metadata(Command cmd) {
     return {Command::JS_HEARTBEAT, "JS_HEARTBEAT", 0, PrivilegeTier::USER};
   case Command::SUBMIT_JOB:
     return {Command::SUBMIT_JOB, "SUBMIT_JOB", 50, PrivilegeTier::USER};
+  case Command::SUBMIT_DAG:
+    return {Command::SUBMIT_DAG, "SUBMIT_DAG", 100, PrivilegeTier::USER};
   case Command::EXECUTE_TASK:
     return {Command::EXECUTE_TASK, "EXECUTE_TASK", 0, PrivilegeTier::USER};
   }
@@ -101,6 +140,8 @@ string_to_command(std::string_view s) {
     return Command::LIST_ALL;
   if (s == "SUBMIT_JOB" || s == "job")
     return Command::SUBMIT_JOB;
+  if (s == "SUBMIT_DAG")
+    return Command::SUBMIT_DAG;
   return std::nullopt;
 }
 
@@ -109,19 +150,12 @@ export struct Config {
   int nm_clt_port = 8080;
   int nm_ss_reg_port = 5049;
   int nm_ss_comm_port = 4050;
-  int nm_js_reg_port = 6051; // New port for Job Server registration
+  int nm_js_reg_port = 6051;
 };
 
 export struct ClientDetails {
   int id = -1;
 };
-
-export constexpr size_t MAX_ARG_LEN = 256;
-export constexpr size_t MAX_ARGS_COUNT = 16;
-export constexpr size_t MAX_PATH_LEN = 256;
-export constexpr size_t MAX_PATHS = 10;
-export constexpr size_t MAX_IP_LEN = 64;
-export constexpr size_t FILE_CHUNK_SIZE = 4096;
 
 export struct ClientRequest {
   ClientDetails client;
@@ -148,7 +182,7 @@ export struct ServerDetails {
 export struct AckPacket {
   Status status = Status::Success;
   int error_code = 0;
-  int extra_info[8]; // Fixed size instead of vector
+  int extra_info[8];
   int extra_count = 0;
 };
 

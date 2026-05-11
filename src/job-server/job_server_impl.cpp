@@ -68,7 +68,14 @@ struct JobServer::Impl {
 
     logger::info(
         "Job Server: Executing task: " + std::string(payload.command_line) +
-        " on " + std::string(payload.target_file));
+        (payload.target_file[0] != '\0'
+             ? " on " + std::string(payload.target_file)
+             : ""));
+
+    if (payload.target_file[0] == '\0') {
+      execute_job(nm_task_sock, payload.command_line, "/dev/null");
+      return;
+    }
 
     // 1. Get file location from NM
     commands::ClientRequest loc_req{};
@@ -160,8 +167,9 @@ struct JobServer::Impl {
 
       // Split cmd_line into argv using shared utils
       auto args = client::utils::split_args(cmd_line);
-      std::vector<char*> argv;
-      for (auto& s : args) argv.push_back(const_cast<char*>(s.c_str()));
+      std::vector<char *> argv;
+      for (auto &s : args)
+        argv.push_back(const_cast<char *>(s.c_str()));
       argv.push_back(nullptr);
 
       execvp(argv[0], argv.data());

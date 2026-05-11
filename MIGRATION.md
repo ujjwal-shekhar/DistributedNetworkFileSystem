@@ -39,6 +39,31 @@ This document tracks the refactoring journey from a legacy C-style implementatio
 | **Path Resolution** | Manual string manipulation | `std::filesystem` & logical VFS context |
 | **Build System** | Makefile / Shell scripts | CMake 3.30+ with Ninja |
 
----
 
-*Refactored with collaboration from Gemini CLI.*
+## Phase 2: Disaggregated Job Servers
+
+- **Architecture**: Decoupled compute from storage (Option 1: Disaggregated JS/SS).
+- **Compute Engine**: Created `job-server` module implementing a task-listening service. 
+- **Arbitrary Execution**: Implemented a secure `fork`/`exec` compute engine in the Job Server, leveraging relaxed `exec*` rules for the `js:compute` partition.
+- **Protocol Expansion**: Added `JS_REGISTER`, `JS_HEARTBEAT`, and `SUBMIT_JOB` protocol types.
+- **Client Integration**: Updated CLI with `job <command> [args...] <file>` syntax, supporting robust tokenization (quoted arguments) and status icon feedback.
+
+## Phase 3: DAG Scheduler (Completed)
+
+- **DAG Parsing**: Implemented client-side parser in `client:utils` that converts complex shell strings (`|`, `;`, `&`, `&&`) into a binary `DAGPayload`.
+- **Naming Server Orchestration**:
+    - **`nm:load_balancer`**: Implemented Policy-based (RoundRobin, Random) JS selection.
+    - **`nm:dag_processor`**: Implemented a parallel execution engine using Topological Sort and `std::jthread`.
+- **Execution Flow**: NM orchestrates parallel branches simultaneously across multiple Job Servers, while handling linear pipelines sequentially in the current prototype.
+- **Verification**: Verified via GTest unit tests for the AST parser and a Docker-based parallelization simulation.
+
+## Legacy vs. Modern Comparison
+
+- **Phase 1 Implementation**: Successfully integrated C-Shell components (prompting, navigation, raw-mode history, colorized status).
+- **Phase 2 Architecture**: Evaluated disaggregated vs. co-located models and concluded that **Option 1 (Disaggregated Compute/Storage)** is optimal for maintainability.
+- **Job Server Evolution**: Implemented a stateless compute engine using `fork`/`exec` on Job Servers.
+- **DAG Execution Discussion**: 
+    - Analyzed standard models like Microsoft Dryad and Apache Spark for DAG task orchestration.
+    - Determined that the Client will parse shell strings into binary `DAGPayloads` to keep the Naming Server focused on scheduling and load balancing.
+    - Resolved that `nm_clt_port` in `js` is for file metadata lookups, ensuring the Job Server can locate data across the Storage Server cluster.
+    - Confirmed the use of `client:utils::split_args` to ensure full shell-argument compatibility (e.g., handling quotes) in distributed jobs.

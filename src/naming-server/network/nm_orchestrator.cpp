@@ -382,6 +382,14 @@ struct NamingServer::Impl {
         continue;
       }
 
+      if (request.command == commands::Command::SUBMIT_DAG) {
+        commands::DAGPayload payload;
+        if (network::receive_all(client_sock, &payload, sizeof(payload))) {
+          service.process_dag(payload, client_sock);
+        }
+        continue;
+      }
+
       if (request.command == commands::Command::LIST_ALL) {
         auto files = service.list_all();
         commands::AckPacket ack{.status = commands::Status::Success};
