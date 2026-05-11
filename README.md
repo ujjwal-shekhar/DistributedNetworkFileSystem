@@ -17,12 +17,12 @@ OrionFS is a high-performance system that fuses a **Decoupled Network File Syste
 
 ```text
         [ SS_1 ]
-        [ SS_2 ] <=======> [ CLT ]
-          ^                   ^
-          |                   |
+        [ SS_2 ] <========> [ CLT ]
+          ^                    ^
+          |                    |
           |                 [ NM ]
-          |                   |
-          v                   v
+          |                    |
+          v                    v
         [ SS_(n-1) ] <====> [ JS1 ]
         [ SS_n ]            [ JS2 ]
 ```
