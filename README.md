@@ -1,17 +1,30 @@
-# 🌌 OrionFS: Unified Distributed Data & Compute Engine
+<div align="center">
+
+# 🌌 OrionFS
+
+### Unified Distributed Data & Compute Engine
+
+<img src="assets/banner.png" alt="OrionFS Banner" width="100%">
+
+
+[![C++ Standard](https://img.shields.io/badge/C%2B%2B-26-blue.svg?style=for-the-badge&logo=c%2B%2B)](https://isocpp.org/)
+[![Build and Test](https://img.shields.io/badge/Build%20%26%20Test-passing-brightgreen.svg?style=for-the-badge&logo=github-actions)](https://github.com/your-username/OrionFS)
+[![License](https://img.shields.io/badge/License-BSL--1.0-orange.svg?style=for-the-badge)](https://opensource.org/licenses/BSL-1.0)
+
+</div>
 
 OrionFS is a high-performance system that fuses a **Decoupled Network File System** with a **Distributed Shell Execution Engine**, implemented using **Cutting-Edge C++ (C++20/23/26)**.
 
 ```text
-        [ SS1 ]
-        [ SS2 ] <====> [ CLT ]
-          ^              ^
-          |              |
-          |            [ NM ]
-          |              |
-          v              v
-        [ SS3 ] <====> [ JS1 ]
-        [ SS4 ]        [ JS2 ]
+        [ SS_1 ]
+        [ SS_2 ] <=======> [ CLT ]
+          ^                   ^
+          |                   |
+          |                 [ NM ]
+          |                   |
+          v                   v
+        [ SS_(n-1) ] <====> [ JS1 ]
+        [ SS_n ]            [ JS2 ]
 ```
 
 ---
@@ -188,6 +201,12 @@ OrionFS is a modern realization of foundational distributed systems concepts, he
 
 ---
 
-## AI Collaboration
+## Origin and Refactoring
 
-OrionFS was modernized and engineered using **Gemini CLI**, focusing on C++26 standards, distributed robustness, and automated resilience testing.
+OrionFS originated as a collaborative team project in C. The current version, as presented here, represents a comprehensive modernization and architectural refactor led by me (Ujjwal Shekhar), transitioning the codebase to C++26 modules, implementing the disaggregated compute-storage engine, and introducing the distributed DAG scheduling and auto-healing capabilities.
+
+**Original Team:**
+*   Anika Roy
+*   Prakul Agrawal
+*   Ujjwal Shekhar (me)
+
