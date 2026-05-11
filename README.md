@@ -9,7 +9,7 @@
 
 # 🌌 OrionFS
 
-### Unified Distributed Data & Compute Engine
+### Unified Distributed Storage & Compute Shell
 
 </div>
 
