@@ -35,10 +35,10 @@ OrionFS is a high-performance system that fuses a **Decoupled Network File Syste
 - **🚀 Distributed Shell (DAG):** Advanced scheduler that compiles complex shell strings into a Directed Acyclic Graph. Supports parallel branches, pipelines (`|`), sequential barriers (`;`), and background tasks (`&`).
 - **🔗 Decoupled Data Path:** To maximize performance, OrionFS separates metadata from data. The Naming Server handles routing, while the Client and Job Servers stream bytes **directly** to/from Storage Servers.
 - **🧊 Disaggregated Compute:** Dedicated Job Servers (`js`) provide stateless compute resources. Computation is decoupled from storage, allowing independent scaling and maximum fault isolation.
-- **🦾 Dynamic Redundancy (Auto-Healing):** The Naming Server (`nm`) monitors node health. Upon failure, it orchestrates peer-to-peer re-replication between Storage Servers (`ss`) to maintain the target replication factor.
-- **⚡ Modern C++ Core:** Built with **C++26** standards, utilizing C++20 Modules, `std::expected` for error propagation, `std::jthread` for RAII-based concurrency, and **C++26 Reflection**.
-- **🛡️ Distributed Synchronization:** Fine-grained path-based locking ensures data integrity during concurrent `WRITE_FILE` operations across multiple replicas.
-- **📟 Modernized C-Shell:** Feature-rich interactive CLI with terminal raw mode, ANSI color support, command history persistence, and logical VFS navigation (`warp`, `peek`).
+- 🦾 Dynamic Redundancy (Auto-Healing): The Naming Server (`nm`) monitors node health. Upon failure, it orchestrates peer-to-peer re-replication between Storage Servers (`ss`) to maintain the target replication factor.
+- ⚡ Modern C++ Core: Built with **C++26** standards, utilizing C++20 Modules, `std::expected` for error propagation, `std::jthread` for RAII-based concurrency. Static reflection (P2996) is on the roadmap and will be introduced as compiler support matures.
+- 🛡️ Distributed Synchronization: Fine-grained path-based locking ensures data integrity during concurrent `WRITE_FILE` operations across multiple replicas.
+- 📟 Modernized C-Shell: Feature-rich interactive CLI with terminal raw mode, ANSI color support, command history persistence, and logical VFS navigation (`warp`, `peek`).
 
 ---
 
@@ -50,7 +50,7 @@ OrionFS is a high-performance system that fuses a **Decoupled Network File Syste
 - **Virtualization:** Docker & Docker Compose
 - **Language Features:** 
   - C++20 Modules & Partitions
-  - **C++26 Reflection**
+  - Reflection (to be added after toolchain matures): [Minimal example on Godbolt](https://godbolt.org/z/W1MGfdsfW)
   - `std::expected` / `std::optional`
   - RAII Socket & Thread management
 

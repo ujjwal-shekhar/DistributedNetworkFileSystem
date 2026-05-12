@@ -7,3 +7,5 @@ tests/*.log
 
 build/
 mnt/
+repro/
+reflection_test/
